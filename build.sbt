@@ -1,9 +1,16 @@
 lazy val fapi = project
   .in(file("."))
-  .enablePlugins(AutomateHeaderPlugin, GitVersioning)
+  .enablePlugins(AutomateHeaderPlugin, GitVersioning, JavaAppPackaging)
 
 libraryDependencies ++= Vector(
-  Library.scalaTest % "test"
+  Library.akkaHttp,
+  Library.akkaHttpCirce,
+  Library.circe,
+  Library.circeJava8,
+  Library.swaggerAkkaHttp,
+
+  Library.scalaTest % "test",
+  Library.akkaHttpTestkit % "test"
 )
 
 initialCommands := """|import com.example.fapi._
