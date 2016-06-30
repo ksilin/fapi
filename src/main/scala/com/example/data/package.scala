@@ -38,7 +38,7 @@ package object data {
     query[Load]
   }
 
-  case class Task(name: String, createdAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, active: Boolean = true)
+  case class Task(name: String, createdAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, active: Boolean = true, id: Option[Int] = None)
 
   val tasks = quote {
     query[Task]

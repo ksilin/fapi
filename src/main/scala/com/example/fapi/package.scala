@@ -16,8 +16,12 @@
 
 package com.example
 
-import com.example.data.{ Load, Task }
-import io.circe.{ Decoder, Encoder, Json }
+import com.example.data.{Load, Task}
+import io.circe.Decoder.Result
+import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.circe._
+import io.circe.generic.auto._
+import io.circe.syntax._
 import org.joda.time.DateTime
 
 package object fapi {
@@ -43,11 +47,26 @@ package object fapi {
 
   implicit val taskEncoder: Encoder[Task] = Encoder.instance { task =>
     Json.obj(
+      "id" -> task.id.asJson,
       "name" -> task.name.asJson,
       "active" -> task.active.asJson,
       "createdAt" -> task.createdAt.asJson,
       "modifiedAt" -> task.modifiedAt.asJson
     )
   }
+
+//  implicit val extractTask: Decoder[Task] = decode[Task]
+//    Decoder.instance{
+//    val cursorToResult: (HCursor) => Result[String] = _.get[String]("name")
+//  }
+
+  //  implicit val taskDecoder: Decoder[Task] = Decoder.instance { json =>
+  //    for {
+  //      name <- json.downField("name").as[String]
+  //      createdAt <- json.downField("createdAt").as[DateTime]
+  //      updatedAt <- json.downField("updatedAt").as[Option[DateTime]]
+  //      active <- json.downField("active").as[Boolean]
+  //    } yield Task(name) //, createdAt, updatedAt, active)
+  //  }
 
 }

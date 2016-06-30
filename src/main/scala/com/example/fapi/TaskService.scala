@@ -42,7 +42,7 @@ class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
   }
 
   def taskPost = post {
-    entity(as[Task]) { task =>
+    entity(as[Task]) { (task: Task) =>
       onSuccess(loadRepository ? TaskRepository.AddTask(task.name)) {
         case TaskRepository.TaskAdded(_)  => complete(StatusCodes.Created)
         case TaskRepository.TaskExists(_) => complete(StatusCodes.Conflict)
