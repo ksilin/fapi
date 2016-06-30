@@ -16,34 +16,36 @@
 
 package com.example.fapi
 
-import akka.pattern.ask // required for ?
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
+import akka.pattern.ask
 import akka.util.Timeout
+import com.example.data.{ Load, Task, TaskRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
+import io.circe.{ Encoder, Json }
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 
-class StatsService(statsRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives {
-  import CirceSupport._
+class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
   import io.circe.generic.auto._
+  import io.circe.syntax._
 
   implicit val timeout = internalTimeout
 
-  val route = pathPrefix("stats") { statssGetAll ~ statsPost }
+  val route = pathPrefix("task") { taskGetAll ~ taskPost }
 
-  def statssGetAll = get {
+  def taskGetAll = get {
     complete {
-      (statsRepository ? StatsRepository.GetStatss).mapTo[Set[StatsRepository.Stats]]
+      (loadRepository ? TaskRepository.GetAll).mapTo[List[Task]]
     }
   }
 
-  def statsPost = post {
-    entity(as[StatsRepository.Stats]) { stats =>
-      onSuccess(statsRepository ? StatsRepository.AddStats(stats.name)) {
-        case StatsRepository.StatsAdded(_)  => complete(StatusCodes.Created)
-        case StatsRepository.StatsExists(_) => complete(StatusCodes.Conflict)
+  def taskPost = post {
+    entity(as[Task]) { task =>
+      onSuccess(loadRepository ? TaskRepository.AddTask(task.name)) {
+        case TaskRepository.TaskAdded(_)  => complete(StatusCodes.Created)
+        case TaskRepository.TaskExists(_) => complete(StatusCodes.Conflict)
       }
     }
   }

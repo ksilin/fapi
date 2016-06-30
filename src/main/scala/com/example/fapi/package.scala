@@ -16,10 +16,38 @@
 
 package com.example
 
+import com.example.data.{ Load, Task }
+import io.circe.{ Decoder, Encoder, Json }
+import org.joda.time.DateTime
+
 package object fapi {
 
   type Traversable[+A] = scala.collection.immutable.Traversable[A]
   type Iterable[+A] = scala.collection.immutable.Iterable[A]
   type Seq[+A] = scala.collection.immutable.Seq[A]
   type IndexedSeq[+A] = scala.collection.immutable.IndexedSeq[A]
+
+  import io.circe.syntax._
+  implicit val dateTimeEncoder: Encoder[DateTime] = Encoder.instance(a => a.getMillis.asJson)
+  implicit val dateTimeDecoder: Decoder[DateTime] = Decoder.instance(a => a.as[Long].map(new DateTime(_)))
+
+  implicit val loadEncoder: Encoder[Load] = Encoder.instance { load =>
+    Json.obj(
+      "machine" -> load.machine.asJson,
+      "time" -> load.time.asJson,
+      "cpu" -> load.cpu.asJson,
+      "mem" -> load.mem.asJson,
+      "records" -> load.records.asJson
+    )
+  }
+
+  implicit val taskEncoder: Encoder[Task] = Encoder.instance { task =>
+    Json.obj(
+      "name" -> task.name.asJson,
+      "active" -> task.active.asJson,
+      "createdAt" -> task.createdAt.asJson,
+      "modifiedAt" -> task.modifiedAt.asJson
+    )
+  }
+
 }

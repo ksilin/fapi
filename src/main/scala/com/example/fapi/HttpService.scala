@@ -32,11 +32,11 @@ object HttpService {
 
   final val Name = "http-service"
 
-  def props(address: String, port: Int, internalTimeout: Timeout, statsRepository: ActorRef): Props =
-    Props(new HttpService(address, port, internalTimeout, statsRepository))
+  def props(address: String, port: Int, internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef): Props =
+    Props(new HttpService(address, port, internalTimeout, loadRepository, taskRepository))
 
-  private def route(httpService: ActorRef, address: String, port: Int, internalTimeout: Timeout,
-    statsRepository: ActorRef, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
+  private def route(httpService: ActorRef, internalTimeout: Timeout, loadRepository: ActorRef,
+    taskRepository: ActorRef, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
     import io.circe.generic.auto._
 
@@ -44,13 +44,16 @@ object HttpService {
       getFromResourceDirectory("swagger") ~ pathSingleSlash(get(redirect("index.html", StatusCodes.PermanentRedirect)))
     }
 
-    val fullRoute = assets ~ new StatsService(statsRepository, internalTimeout).route
+    val loadRoute: Route = new LoadService(loadRepository, internalTimeout).route
+    val taskRoute: Route = new TaskService(taskRepository, internalTimeout).route
+
+    val fullRoute = assets ~ loadRoute ~ taskRoute
     val clientRequestLogged: Route = DebuggingDirectives.logRequest("request", Logging.DebugLevel)(fullRoute)
     clientRequestLogged
   }
 }
 
-class HttpService(address: String, port: Int, internalTimeout: Timeout, statsRepository: ActorRef)
+class HttpService(address: String, port: Int, internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef)
     extends Actor with ActorLogging {
 
   import HttpService._
@@ -59,7 +62,7 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, statsRep
   private implicit val mat = ActorMaterializer()
 
   Http(context.system)
-    .bindAndHandle(route(self, address, port, internalTimeout, statsRepository, context.system), address, port)
+    .bindAndHandle(route(self, internalTimeout, loadRepository, taskRepository, context.system), address, port)
     .pipeTo(self)
 
   override def receive = binding

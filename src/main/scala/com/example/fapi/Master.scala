@@ -17,13 +17,16 @@
 package com.example.fapi
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, SupervisorStrategy, Terminated }
+import com.example.data.{ LoadRepository, TaskRepository }
+
 import concurrent.duration._
 
 class Master extends Actor with ActorLogging {
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  private val statsRepository = context.watch(createStatsRepository())
-  context.watch(createHttpService(statsRepository))
+  private val loadRepository = context.watch(createLoadRepository())
+  private val taskRepository = context.watch(createTaskRepository())
+  context.watch(createHttpService(loadRepository, taskRepository))
 
   log.info("Up and running")
 
@@ -31,19 +34,21 @@ class Master extends Actor with ActorLogging {
     case Terminated(actor) => onTerminated(actor)
   }
 
-  protected def createStatsRepository(): ActorRef = {
-    context.actorOf(StatsRepository.props(), StatsRepository.Name)
+  protected def createLoadRepository(): ActorRef = {
+    context.actorOf(LoadRepository.props(), LoadRepository.Name)
   }
 
-  protected def createHttpService(statsRepositoryActor: ActorRef): ActorRef = {
-    //      import settings.httpService._
+  protected def createTaskRepository(): ActorRef = {
+    context.actorOf(TaskRepository.props(), TaskRepository.Name)
+  }
 
+  protected def createHttpService(loadRepositoryActor: ActorRef, taskRepositoryActor: ActorRef): ActorRef = {
     val address = "127.0.0.1"
     val port = 9001
     val selfTimeout = 10 seconds
 
     context.actorOf(
-      HttpService.props(address, port, selfTimeout, statsRepositoryActor),
+      HttpService.props(address, port, selfTimeout, loadRepositoryActor, taskRepositoryActor),
       HttpService.Name
     )
   }

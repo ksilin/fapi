@@ -9,6 +9,9 @@ libraryDependencies ++= Vector(
   Library.circeJava8,
   Library.swaggerAkkaHttp,
 
+  Library.h2connector,
+  Library.quillJdbc,
+
   Library.scalaTest % "test",
   Library.akkaHttpTestkit % "test"
 )

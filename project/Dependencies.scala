@@ -17,6 +17,9 @@ object Library {
   val circeJava8 = "io.circe" %% "circe-java8" % Version.circe
   val swaggerAkkaHttp = "com.github.swagger-akka-http" %% "swagger-akka-http" % Version.swaggerAkkaHttp
 
+  val h2connector =  "com.h2database" % "h2" % "1.4.190"
+  val quillJdbc = "io.getquill" %% "quill-jdbc" % "0.6.0"
+
   val scalaTest = "org.scalatest" %% "scalatest" % Version.ScalaTest
   val akkaHttpTestkit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akka
 }
