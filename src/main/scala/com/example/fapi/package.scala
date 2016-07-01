@@ -16,9 +16,9 @@
 
 package com.example
 
-import com.example.data.{Load, Task}
+import com.example.data.{ Load, Task }
 import io.circe.Decoder.Result
-import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.circe.{ Decoder, Encoder, HCursor, Json }
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -55,10 +55,10 @@ package object fapi {
     )
   }
 
-//  implicit val extractTask: Decoder[Task] = decode[Task]
-//    Decoder.instance{
-//    val cursorToResult: (HCursor) => Result[String] = _.get[String]("name")
-//  }
+  //  implicit val extractTask: Decoder[Task] = decode[Task]
+  //    Decoder.instance{
+  //    val cursorToResult: (HCursor) => Result[String] = _.get[String]("name")
+  //  }
 
   //  implicit val taskDecoder: Decoder[Task] = Decoder.instance { json =>
   //    for {

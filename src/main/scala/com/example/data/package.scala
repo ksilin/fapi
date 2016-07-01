@@ -18,9 +18,9 @@ package com.example
 
 import java.util.Date
 
-import io.getquill._
 import io.getquill.naming.Literal
 import io.getquill.sources.sql.idiom.H2Dialect
+import io.getquill.{ JdbcSourceConfig, QueryProbing, _ }
 import org.joda.time.DateTime
 
 package object data {

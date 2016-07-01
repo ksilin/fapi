@@ -38,7 +38,6 @@ object HttpService {
   private def route(httpService: ActorRef, internalTimeout: Timeout, loadRepository: ActorRef,
     taskRepository: ActorRef, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
-    import io.circe.generic.auto._
 
     def assets = pathPrefix("swagger") {
       getFromResourceDirectory("swagger") ~ pathSingleSlash(get(redirect("index.html", StatusCodes.PermanentRedirect)))

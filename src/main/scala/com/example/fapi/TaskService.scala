@@ -23,13 +23,11 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.example.data.{ Load, Task, TaskRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import io.circe.{ Encoder, Json }
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
 
 class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
   import io.circe.generic.auto._
-  import io.circe.syntax._
 
   implicit val timeout = internalTimeout
 

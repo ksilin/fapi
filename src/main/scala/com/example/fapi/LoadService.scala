@@ -23,8 +23,6 @@ import akka.util.Timeout
 import com.example.data.{ Load, LoadRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.circe.generic.auto._
-import io.circe.syntax._
-import io.circe.{ Encoder, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
