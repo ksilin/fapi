@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.data
+package com.example.fapi.data
 
 import akka.actor.{ Actor, ActorLogging, Props }
 

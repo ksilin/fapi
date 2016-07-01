@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.example.fapi
+package com.example.fapi.http
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
-import com.example.data.{ Load, Task, TaskRepository }
+import com.example.fapi.data.{ Task, TaskRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 
 import scala.concurrent.ExecutionContext

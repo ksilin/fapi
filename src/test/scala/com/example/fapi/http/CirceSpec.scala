@@ -16,7 +16,10 @@
 
 package com.example.fapi.http
 
+import cats.data.Xor
+import com.example.fapi.data.{ Load, Task }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
+import io.circe.Decoder.Result
 import org.scalatest.FreeSpec
 
 class CirceSpec extends FreeSpec with CirceSupport {
@@ -24,20 +27,46 @@ class CirceSpec extends FreeSpec with CirceSupport {
   "circe encoding and decoding with support" - {
 
     //    import io.circe.Decoder.Result
-    //    import io.circe.{ Decoder, Encoder, HCursor, Json }
-    //    import io.circe._
+    import io.circe._
     import io.circe.generic.auto._
     import io.circe.syntax._
+    import io.circe.jawn._
+    import io.circe.{ Decoder, Encoder, Json => JsonC }
+    import io.circe.generic.semiauto._
 
     "simple automatic" in {
 
       case class Foo(bar: String, qux: Int)
-
       val f = Foo("lhfwdf", 13)
-
       val jsonF = f.asJson
-
       println(jsonF)
+    }
+
+    "with Datetime" in {
+      val l = Load("machine")
+      println(l.asJson)
+    }
+
+    "with Options" in {
+      val t = Task("fake")
+      val asJson: Json = t.asJson
+      println(asJson)
+
+      val taskDec: Decoder[Task] = deriveDecoder[Task]
+
+      val jsonString: String = asJson.toString
+
+      val parsed: Xor[ParsingFailure, JsonC] = parse(jsonString)
+
+      val tOpt = parsed.toOption map { js => taskDec.decodeJson(js) }
+
+      //      val t2 = parsed match {
+      //        case f: Left[ParsingFailure, JsonC] => println(s"encountered parsingFailure: $f")
+      //        case js: Right[ParsingFailure, JsonC] => println(s"decoded: $js")//taskDec.decodeJson(js.b)
+      //      }
+
+      println(decode[Task](asJson.spaces4))
+      println(tOpt)
     }
 
   }

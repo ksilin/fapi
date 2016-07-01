@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example
+package com.example.fapi
 
 import java.util.Date
 
@@ -28,9 +28,9 @@ package object data {
   implicit val decodeDateTime = mappedEncoding[Date, DateTime](new DateTime(_))
   implicit val encodeDateTime = mappedEncoding[DateTime, Date](_.toDate)
 
-  private val dbName: String = "h2DB"
-  val testH2DB = source(new JdbcSourceConfig[H2Dialect, Literal](dbName))
-  val testH2DBWithQueryProbing = source(new JdbcSourceConfig[H2Dialect, Literal](dbName) with QueryProbing)
+  //  private val dbName: String = "h2DB"
+  val h2DB = source(new JdbcSourceConfig[H2Dialect, Literal]("h2DB"))
+  //  val h2DBWithQueryProbing = source(new JdbcSourceConfig[H2Dialect, Literal](dbName) with QueryProbing)
 
   case class Load(machine: String, time: DateTime = DateTime.now(), cpu: Int = 0, mem: Int = 0, records: Long = 0L)
 

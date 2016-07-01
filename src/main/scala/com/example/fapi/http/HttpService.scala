@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.fapi
+package com.example.fapi.http
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props, Status }
 import akka.event.Logging
@@ -22,9 +22,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.http.scaladsl.server.{ Directives, Route }
+import akka.pattern.pipe
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
-import akka.pattern.pipe
 
 import scala.concurrent.ExecutionContext
 

@@ -17,7 +17,8 @@
 package com.example.fapi
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, SupervisorStrategy, Terminated }
-import com.example.data.{ LoadRepository, TaskRepository }
+import com.example.fapi.data.{ LoadRepository, TaskRepository }
+import com.example.fapi.http.HttpService
 
 import concurrent.duration._
 

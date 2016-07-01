@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.example
+package com.example.fapi
 
-package object fapi {
+import io.circe.{ Decoder, Encoder }
+import org.joda.time.DateTime
 
-  type Traversable[+A] = scala.collection.immutable.Traversable[A]
-  type Iterable[+A] = scala.collection.immutable.Iterable[A]
-  type Seq[+A] = scala.collection.immutable.Seq[A]
-  type IndexedSeq[+A] = scala.collection.immutable.IndexedSeq[A]
+package object http {
 
+  import io.circe.syntax._
+  implicit val dateTimeEncoder: Encoder[DateTime] = Encoder.instance(a => a.getMillis.asJson)
+  implicit val dateTimeDecoder: Decoder[DateTime] = Decoder.instance(a => a.as[Long].map(new DateTime(_)))
 }

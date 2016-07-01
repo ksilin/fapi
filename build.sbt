@@ -6,6 +6,7 @@ libraryDependencies ++= Vector(
   Library.akkaHttp,
   Library.akkaHttpCirce,
   Library.circe,
+  Library.circeParser,
   Library.circeJava8,
   Library.swaggerAkkaHttp,
 

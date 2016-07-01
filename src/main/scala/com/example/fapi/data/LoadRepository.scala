@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.data
+package com.example.fapi.data
 
 import akka.actor.{ Actor, ActorLogging, Props }
 import org.joda.time.DateTime
@@ -37,7 +37,7 @@ class LoadRepository extends Actor with ActorLogging {
   override def receive = {
     case GetLoad =>
       log.debug("received GetLoad command")
-      val getAll: List[Load] = testH2DB.run(loads)
+      val getAll: List[Load] = h2DB.run(loads)
       sender() ! getAll
     case GetLoadStartingAt(t: DateTime) =>
       log.debug(s"received GetLoadStartingAt(${t: DateTime}) command")

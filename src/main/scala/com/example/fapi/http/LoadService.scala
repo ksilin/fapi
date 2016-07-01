@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.example.fapi
+package com.example.fapi.http
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.server.{ Directives, Route }
 import akka.pattern.ask
 import akka.util.Timeout
-import com.example.data.{ Load, LoadRepository }
+import com.example.fapi.data.{ Load, LoadRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.circe.generic.auto._
 
