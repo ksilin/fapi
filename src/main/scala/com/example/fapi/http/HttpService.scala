@@ -16,44 +16,54 @@
 
 package com.example.fapi.http
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props, Status }
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, Status}
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.directives.DebuggingDirectives
-import akka.http.scaladsl.server.{ Directives, Route }
+import akka.http.scaladsl.server.directives.{Credentials, DebuggingDirectives}
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext
 
-object HttpService {
+object HttpService extends HttpConfig {
 
   final val Name = "http-service"
 
-  def props(address: String, port: Int, internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef): Props =
-    Props(new HttpService(address, port, internalTimeout, loadRepository, taskRepository))
+  def props(internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef): Props =
+    Props(new HttpService(httpInterface, httpPort, internalTimeout, loadRepository, taskRepository))
 
   private def route(httpService: ActorRef, internalTimeout: Timeout, loadRepository: ActorRef,
-    taskRepository: ActorRef, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
+                    taskRepository: ActorRef, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
 
     def assets = pathPrefix("swagger") {
       getFromResourceDirectory("swagger") ~ pathSingleSlash(get(redirect("index.html", StatusCodes.PermanentRedirect)))
     }
 
+    def simplePassAuth(credentials: Credentials): Option[String] =
+      credentials match {
+        case p@Credentials.Provided(id) =>
+          authMap.get(id).filter(p.verify).map(_ => id)
+        case _ => None
+      }
+
     val loadRoute: Route = new LoadService(loadRepository, internalTimeout).route
     val taskRoute: Route = new TaskService(taskRepository, internalTimeout).route
-
     val fullRoute = assets ~ loadRoute ~ taskRoute
-    val clientRequestLogged: Route = DebuggingDirectives.logRequest("request", Logging.DebugLevel)(fullRoute)
-    clientRequestLogged
+
+    val authRoute: Route = authenticateBasic(realm = "fapi", simplePassAuth) { userName =>
+        fullRoute
+      }
+
+    DebuggingDirectives.logRequest("request", Logging.DebugLevel)(authRoute)
   }
 }
 
 class HttpService(address: String, port: Int, internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef)
-    extends Actor with ActorLogging {
+  extends Actor with ActorLogging {
 
   import HttpService._
   import context.dispatcher
@@ -67,7 +77,7 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, loadRepo
   override def receive = binding
 
   private def binding: Receive = {
-    case serverBinding @ Http.ServerBinding(address) =>
+    case serverBinding@Http.ServerBinding(address) =>
       log.info("Listening on {}", address)
 
     case Status.Failure(cause) =>

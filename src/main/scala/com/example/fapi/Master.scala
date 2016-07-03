@@ -44,12 +44,10 @@ class Master extends Actor with ActorLogging {
   }
 
   protected def createHttpService(loadRepositoryActor: ActorRef, taskRepositoryActor: ActorRef): ActorRef = {
-    val address = "127.0.0.1"
-    val port = 9001
     val selfTimeout = 10 seconds
 
     context.actorOf(
-      HttpService.props(address, port, selfTimeout, loadRepositoryActor, taskRepositoryActor),
+      HttpService.props(selfTimeout, loadRepositoryActor, taskRepositoryActor),
       HttpService.Name
     )
   }
