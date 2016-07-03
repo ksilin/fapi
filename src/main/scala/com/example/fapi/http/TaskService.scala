@@ -31,7 +31,7 @@ class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   implicit val timeout = internalTimeout
 
-  val route = pathPrefix("task") { taskGetAll ~ taskPost }
+  val route = pathPrefix("task") { taskGetAll ~ taskPost ~ deleteTask }
 
   def taskGetAll = get {
     complete {
@@ -44,6 +44,15 @@ class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
       onSuccess(loadRepository ? TaskRepository.AddTask(task.name)) {
         case TaskRepository.TaskAdded(_)  => complete(StatusCodes.Created)
         case TaskRepository.TaskExists(_) => complete(StatusCodes.Conflict)
+      }
+    }
+  }
+
+  def deleteTask = delete {
+    entity(as[Task]) { (task: Task) =>
+      onSuccess(loadRepository ? TaskRepository.DeleteTask(task.name)) {
+        case TaskRepository.TaskWillBeDeleted(_)  => complete(StatusCodes.Accepted)
+        case TaskRepository.TaskNotFound(_) => complete(StatusCodes.NotFound)
       }
     }
   }

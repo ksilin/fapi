@@ -21,9 +21,13 @@ import akka.actor.{ Actor, ActorLogging, Props }
 object TaskRepository {
 
   case object GetAll
+  case class GetTask(name: String)
   case class AddTask(name: String)
   case class TaskAdded(task: Task)
   case class TaskExists(name: String)
+  case class DeleteTask(name: String)
+  case class TaskWillBeDeleted(name: String)
+  case class TaskNotFound(name: String)
 
   final val Name = "task-repository"
   def props(): Props = Props(new TaskRepository())
@@ -32,7 +36,7 @@ object TaskRepository {
 class TaskRepository extends Actor with ActorLogging {
   import TaskRepository._
 
-  private val tasks = List(Task("import db1"), Task("import db2"))
+  private var tasks = List(Task("import db1"), Task("import db2"))
 
   override def receive = {
     case GetAll =>
@@ -43,7 +47,16 @@ class TaskRepository extends Actor with ActorLogging {
     case AddTask(name) =>
       log.info(s"Adding new task with name $name")
       val task = Task(name)
-      //      tasks += task
-      sender() ! TaskAdded(task)
+            tasks = task :: tasks
+              sender() ! TaskAdded(task)
+
+    case DeleteTask(name) if tasks.exists(_.name == name) =>
+      // TODO - add deletion handling
+      tasks = tasks.filterNot(_.name == name)
+      sender() ! TaskWillBeDeleted(name)
+    case DeleteTask(name) =>
+      log.info(s"Adding new task with name $name")
+      sender() ! TaskNotFound(name)
+
   }
 }

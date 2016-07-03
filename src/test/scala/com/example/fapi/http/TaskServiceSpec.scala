@@ -17,18 +17,17 @@
 package com.example.fapi.http
 
 import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model.ResponseEntity
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.example.fapi.data.{Task, TaskRepository}
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 // extends TestKit(ActorSystem("taskServiceSpec"))
 class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with BeforeAndAfterAll with CirceSupport {
-  import io.circe.generic.auto._
+
 
   val repo = system.actorOf(TaskRepository.props(), TaskRepository.Name)
   val taskService = new TaskService(repo, 10 seconds)
@@ -43,22 +42,68 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
 
   "Task service" - {
 
-    val respContent = "sdgf"
+    "should return all tasks" in {
 
-    "should return payload of found Record" in {
       Get("/task/") ~> route ~> check {
         status should be(OK)
         contentType should be(`application/json`)
         headers should be(`empty`)
-        responseAs[String].length should be > 0
+//        responseAs[String].length should be > 0
         val tasks: List[Task] = responseAs[List[Task]]
         tasks.size should be(2)
       }
     }
 
-    // TODO - post & put
 
+    "should add task" in {
+      Post("/task/", Task("new task")) ~> route ~> check {
+        status should be(Created)
+        contentType should be(`text/plain(UTF-8)`)
+        headers should be(`empty`)
+        val entity: ResponseEntity = response.entity
+        val entStr: String = entity.toString
+        println(entStr)
+        entStr.length should be > 0
+      }
+    }
 
+    "should not add existing task" in {
+      Post("/task/", Task("import db1")) ~> route ~> check {
+        status should be(Conflict)
+        contentType should be(`text/plain(UTF-8)`)
+        headers should be(`empty`)
+        val entity: ResponseEntity = response.entity
+        val entStr: String = entity.toString
+        println(entStr)
+        entStr.length should be > 0
+      }
+    }
+
+    "should delete existing task" in {
+      Delete("/task/", Task("import db1")) ~> route ~> check {
+        status should be(Accepted)
+        contentType should be(`text/plain(UTF-8)`)
+        headers should be(`empty`)
+        val entity: ResponseEntity = response.entity
+        val entStr: String = entity.toString
+        println(entStr)
+        entStr.length should be > 0
+      }
+    }
+
+    "should not delete non-existing task" in {
+      Delete("/task/", Task("nonexisting")) ~> route ~> check {
+        status should be(NotFound)
+        contentType should be(`text/plain(UTF-8)`)
+        headers should be(`empty`)
+        val entity: ResponseEntity = response.entity
+        val entStr: String = entity.toString
+        println(entStr)
+        entStr.length should be > 0
+      }
+    }
+
+    // TODO - put
 
     // TODO - test rejection: http://doc.akka.io/docs/akka/2.4.7/scala/http/routing-dsl/testkit.html
   }
