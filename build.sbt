@@ -3,6 +3,11 @@ lazy val fapi = project
   .enablePlugins(AutomateHeaderPlugin, GitVersioning, JavaAppPackaging)
 
 libraryDependencies ++= Vector(
+
+  Library.scalaLogging,
+  Library.logback,
+  Library.janino,
+
   Library.akkaHttp,
   Library.akkaHttpCirce,
   Library.circe,
