@@ -19,6 +19,7 @@ class LoadGen extends Actor with ActorLogging with ClusterConfig {
 
   override def receive: Receive = {
     case GenLoad => machines foreach { machine =>
+      // TODO - use machine stats to generate more plausible loads
         repo ! StoreLoad(Load(machine, 10, 10, 10000L))
     }
     case Purge => repo ! DeleteLoadsBefore(DateTime.now.minusMinutes(15))

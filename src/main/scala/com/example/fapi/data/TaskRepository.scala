@@ -45,7 +45,7 @@ class TaskRepository extends Actor with ActorLogging {
 
   import TaskRepository._
 
-  private var tasks = List(Task("import db1"), Task("import db2"))
+  private var tasks = List.empty[Task]
 
   // TODO - for correct not found handling, we either have to delegate it to the service or block futures here
   // repo should deal in futures and not care for interpretation of empty lists - delegate to service
@@ -71,6 +71,5 @@ class TaskRepository extends Actor with ActorLogging {
     case DeleteTask(name) =>
       log.info(s"Deleting task with name $name failed - task not found")
       sender() ! TaskNotFound(name)
-
   }
 }

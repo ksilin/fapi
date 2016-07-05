@@ -1,6 +1,8 @@
 package com.example.fapi.data
 
 import akka.actor.{ActorRef, ActorSystem}
+import com.example.fapi.data.TaskRepository.AddTask
+import com.example.fapi.data.TaskRunRepository.AddTaskRun
 import com.example.fapi.data.sources.LoadGen.{GenLoad, Purge}
 import com.typesafe.scalalogging.LazyLogging
 
@@ -16,12 +18,21 @@ object BootstrapData extends LazyLogging {
     scheduler.schedule(1 second, 5 minutes, loadGen, Purge)
   }
 
-  def createLoadFor(duration: FiniteDuration = 5 minutes, period: FiniteDuration = 100 millis) = {
+  val initTasks = List("import db1", "import db2")
 
-    val count: Int = (duration / period).ceil.toInt
-    logger.info(s"creating $count loads for the last $duration with a period of $period ")
+  def storeInitTasks(taskRepo: ActorRef)(implicit actorSystem: ActorSystem) = {
+    val scheduler = actorSystem.scheduler
+    implicit val executor = actorSystem.dispatcher
+    initTasks map { t => taskRepo ! AddTask(t) }
+  }
 
-    // TODO - create as source
+  def storeInitTaskRuns(taskRunGen: ActorRef)(implicit actorSystem: ActorSystem) = {
+    val scheduler = actorSystem.scheduler
+    implicit val executor = actorSystem.dispatcher
+
+    initTasks foreach { taskName =>
+      taskRunGen ! AddTaskRun(taskName)
+    }
   }
 
 }

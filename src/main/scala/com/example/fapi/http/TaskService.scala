@@ -26,7 +26,7 @@ import de.heikoseeberger.akkahttpcirce.CirceSupport
 
 import scala.concurrent.ExecutionContext
 
-class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
+class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
   import io.circe.generic.auto._
 
   implicit val timeout = internalTimeout
@@ -35,13 +35,13 @@ class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   def taskGetAll = get {
     complete {
-      (loadRepository ? TaskRepository.GetAll).mapTo[List[Task]]
+      (taskRepository ? TaskRepository.GetAll).mapTo[List[Task]]
     }
   }
 
   def taskPost = post {
     entity(as[Task]) { (task: Task) =>
-      onSuccess(loadRepository ? TaskRepository.AddTask(task.name)) {
+      onSuccess(taskRepository ? TaskRepository.AddTask(task.name)) {
         case TaskRepository.TaskAdded(_)  => complete(StatusCodes.Created)
         case TaskRepository.TaskExists(_) => complete(StatusCodes.Conflict)
       }
@@ -50,7 +50,7 @@ class TaskService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   def deleteTask = delete {
     entity(as[Task]) { (task: Task) =>
-      onSuccess(loadRepository ? TaskRepository.DeleteTask(task.name)) {
+      onSuccess(taskRepository ? TaskRepository.DeleteTask(task.name)) {
         case TaskRepository.TaskWillBeDeleted(_)  => complete(StatusCodes.Accepted)
         case TaskRepository.TaskNotFound(_) => complete(StatusCodes.NotFound)
       }

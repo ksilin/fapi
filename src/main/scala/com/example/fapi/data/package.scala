@@ -72,8 +72,8 @@ package object data {
 
   case class Task(name: String, createdAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, active: Boolean = true, id: Option[Int] = None)
 
-  val tasks = quote {
-    query[Task]
-  }
+  case class TaskStart(name: String, startedAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, id: Option[Int] = None)
+  case class TaskEnd(name: String, doneAt: DateTime = DateTime.now(), successful: Boolean = true, msg: Option[String], id: Option[Int] = None)
+  case class TaskRun(name: String, startedAt: DateTime = DateTime.now(), doneAt: Option[DateTime] = None, successful: Boolean = true, msg: Option[String] = None, id: Option[Int] = None)
 
 }
