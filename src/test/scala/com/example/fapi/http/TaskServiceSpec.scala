@@ -25,6 +25,7 @@ import de.heikoseeberger.akkahttpcirce.CirceSupport
 import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
 
 import scala.concurrent.duration._
+
 // extends TestKit(ActorSystem("taskServiceSpec"))
 class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with BeforeAndAfterAll with CirceSupport {
 
@@ -34,13 +35,14 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
   val route = taskService.route
 
   // TODO - the table is created, do fill it
-//  override def beforeAll() = {
-//    repo.createTable()
-//    Await.result(repo.store(List(rec)), 5 seconds)
-//  }
-//  override def afterAll() = cass.close()
+  //  override def beforeAll() = {
+  //    repo.createTable()
+  //    Await.result(repo.store(List(rec)), 5 seconds)
+  //  }
+  //  override def afterAll() = cass.close()
 
   "Task service" - {
+    import io.circe.generic.auto._
 
     "should return all tasks" in {
 
@@ -48,7 +50,7 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
         status should be(OK)
         contentType should be(`application/json`)
         headers should be(`empty`)
-//        responseAs[String].length should be > 0
+        //        responseAs[String].length should be > 0
         val tasks: List[Task] = responseAs[List[Task]]
         tasks.size should be(2)
       }
