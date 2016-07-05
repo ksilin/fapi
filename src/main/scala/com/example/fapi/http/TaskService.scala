@@ -31,11 +31,20 @@ class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   implicit val timeout = internalTimeout
 
-  val route = pathPrefix("task") { taskGetAll ~ taskPost ~ deleteTask }
+  val route = path("task" /) {
+    taskGetAll ~ taskPost
+  } ~ path("task" / Segment) { name => taskGet(name) ~ deleteTask(name) }
 
   def taskGetAll = get {
     complete {
       (taskRepository ? TaskRepository.GetAll).mapTo[List[Task]]
+    }
+  }
+
+  def taskGet(name: String) = get {
+    onSuccess((taskRepository ? TaskRepository.GetTask(name)).mapTo[List[Task]]) {
+      case Nil => complete(StatusCodes.NotFound)
+      case x   => complete(x)
     }
   }
 
@@ -48,12 +57,12 @@ class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit e
     }
   }
 
-  def deleteTask = delete {
-    entity(as[Task]) { (task: Task) =>
-      onSuccess(taskRepository ? TaskRepository.DeleteTask(task.name)) {
-        case TaskRepository.TaskWillBeDeleted(_)  => complete(StatusCodes.Accepted)
-        case TaskRepository.TaskNotFound(_) => complete(StatusCodes.NotFound)
-      }
+  def deleteTask(id: String) = delete {
+    val task = Task(id)
+    onSuccess(taskRepository ? TaskRepository.DeleteTask(task.name)) {
+      case TaskRepository.TaskWillBeDeleted(_) => complete(StatusCodes.Accepted)
+      case TaskRepository.TaskNotFound(_)      => complete(StatusCodes.NotFound)
     }
   }
+
 }
