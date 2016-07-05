@@ -17,7 +17,7 @@
 package com.example.fapi
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, SupervisorStrategy, Terminated }
-import com.example.fapi.data.{ LoadRepository, TaskRepository }
+import com.example.fapi.data.{ BootstrapData, LoadRepository, TaskRepository, TaskRunRepository }
 import com.example.fapi.http.HttpService
 
 import concurrent.duration._
@@ -27,7 +27,12 @@ class Master extends Actor with ActorLogging {
 
   private val loadRepository = context.watch(createLoadRepository())
   private val taskRepository = context.watch(createTaskRepository())
-  context.watch(createHttpService(loadRepository, taskRepository))
+  private val taskRunRepository = context.watch(createTaskRunRepository())
+  context.watch(createHttpService(loadRepository, taskRepository, taskRunRepository))
+
+  BootstrapData.startGenLoad(loadRepository)(context.system)
+  BootstrapData.storeInitTasks(taskRepository)(context.system)
+  BootstrapData.storeInitTaskRuns(taskRunRepository)(context.system)
 
   log.info("Up and running")
 
@@ -43,11 +48,15 @@ class Master extends Actor with ActorLogging {
     context.actorOf(TaskRepository.props(), TaskRepository.Name)
   }
 
-  protected def createHttpService(loadRepositoryActor: ActorRef, taskRepositoryActor: ActorRef): ActorRef = {
+  protected def createTaskRunRepository(): ActorRef = {
+    context.actorOf(TaskRunRepository.props(), TaskRunRepository.Name)
+  }
+
+  protected def createHttpService(loadRepository: ActorRef, taskRepository: ActorRef, taskRunRepository: ActorRef): ActorRef = {
     val selfTimeout = 10 seconds
 
     context.actorOf(
-      HttpService.props(selfTimeout, loadRepositoryActor, taskRepositoryActor),
+      HttpService.props(selfTimeout, loadRepository, taskRepository, taskRunRepository),
       HttpService.Name
     )
   }

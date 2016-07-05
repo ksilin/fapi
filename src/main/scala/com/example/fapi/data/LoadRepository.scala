@@ -16,7 +16,7 @@
 
 package com.example.fapi.data
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ Actor, ActorLogging, Props }
 import com.example.fapi.http.ClusterConfig
 import org.joda.time.DateTime
 
@@ -60,7 +60,7 @@ class LoadRepository extends Actor with ActorLogging with ClusterConfig {
       sender() ! loads
     case DeleteLoadsBefore(t: DateTime) =>
       log.debug(s"received DeleteLoadsBefore $t command")
-      val deleted: List[Long]= h2DB.run(deleteLoadsBefore)(List(t))
+      val deleted: List[Long] = h2DB.run(deleteLoadsBefore)(List(t))
       sender() ! deleted
   }
 }

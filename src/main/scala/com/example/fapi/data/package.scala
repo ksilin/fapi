@@ -16,21 +16,21 @@
 
 package com.example.fapi
 
-import java.time.{Instant, LocalDateTime, ZoneOffset}
+import java.time.{ Instant, LocalDateTime, ZoneOffset }
 import java.util.Date
 
 import com.example.fapi.http.ClusterConfig
 import io.getquill.naming.Literal
 import io.getquill.sources.sql.idiom.H2Dialect
-import io.getquill.{JdbcSourceConfig, QueryProbing, _}
-import org.joda.time.{DateTime, DateTimeComparator, DateTimeZone}
+import io.getquill.{ JdbcSourceConfig, QueryProbing, _ }
+import org.joda.time.{ DateTime, DateTimeComparator, DateTimeZone }
 
 package object data {
 
   implicit val decodeDateTime = mappedEncoding[Date, DateTime](new DateTime(_))
   implicit val encodeDateTime = mappedEncoding[DateTime, Date](_.toDate)
 
-  implicit val encodeDate = mappedEncoding[Date, LocalDateTime](d =>  LocalDateTime.ofInstant(Instant.ofEpochMilli(d.getTime), ZoneOffset.UTC) )
+  implicit val encodeDate = mappedEncoding[Date, LocalDateTime](d => LocalDateTime.ofInstant(Instant.ofEpochMilli(d.getTime), ZoneOffset.UTC))
   implicit val decodeDate = mappedEncoding[LocalDateTime, Date](ldt => Date.from(ldt.toInstant(ZoneOffset.UTC)))
 
   implicit class ForLocalDateTime(ldt: LocalDateTime) {

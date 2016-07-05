@@ -30,9 +30,9 @@ class LoadService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   implicit val timeout = internalTimeout
 
-  val route = pathPrefix("load") { loadsGetAll }
+  val route = pathPrefix("load") { pathSingleSlash { getAll } }
 
-  def loadsGetAll: Route = get {
+  def getAll: Route = get {
     complete {
       val getLoads: Future[Any] = loadRepository ? LoadRepository.GetLoad
       val asList: Future[List[Load]] = getLoads.mapTo[List[Load]]

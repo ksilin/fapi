@@ -16,7 +16,7 @@
 
 package com.example.fapi.data
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ Actor, ActorLogging, Props }
 
 object TaskRepository {
 
