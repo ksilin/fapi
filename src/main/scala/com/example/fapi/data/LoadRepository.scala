@@ -16,30 +16,51 @@
 
 package com.example.fapi.data
 
-import akka.actor.{ Actor, ActorLogging, Props }
+import akka.actor.{Actor, ActorLogging, Props}
+import com.example.fapi.http.ClusterConfig
 import org.joda.time.DateTime
 
 object LoadRepository {
 
   case object GetLoad
+  case class GetLoadFor(machine: String)
   case class GetLoadStartingAt(t: DateTime)
+  case class GetLoadStartingAtFor(t: DateTime, machine: String)
+  case class DeleteLoadsBefore(t: DateTime)
+  case class StoreLoad(load: Load)
 
   final val Name = "load-repository"
   def props(): Props = Props(new LoadRepository())
 
 }
 
-class LoadRepository extends Actor with ActorLogging {
+class LoadRepository extends Actor with ActorLogging with ClusterConfig {
   import LoadRepository._
-
-  // TODO - init state
 
   override def receive = {
     case GetLoad =>
       log.debug("received GetLoad command")
-      val getAll: List[Load] = h2DB.run(loads)
-      sender() ! getAll
+      val lastLoads: List[Load] = machines flatMap { machine => h2DB.run(lastLoadFor)(machine) }
+      sender() ! lastLoads
+    case GetLoadFor(machine: String) =>
+      log.debug(s"received GetLoadFor $machine command")
+      val lastLoads: List[Load] = h2DB.run(lastLoadFor)(machine)
+      sender() ! lastLoads
     case GetLoadStartingAt(t: DateTime) =>
-      log.debug(s"received GetLoadStartingAt(${t: DateTime}) command")
+      log.debug(s"received GetLoadStartingAt(${t}) command")
+      val loads = machines flatMap { machine => h2DB.run(loadsAfterFor)(t, machine) }
+      sender() ! loads
+    case GetLoadStartingAtFor(t: DateTime, machine: String) =>
+      log.debug(s"received GetLoadStartingAtFor($t, $machine) command")
+      val loads = h2DB.run(loadsAfterFor)(t, machine)
+      sender() ! loads
+    case StoreLoad(load: Load) =>
+      log.debug(s"received StoreLoad(${load}) command")
+      val loads: List[Long] = h2DB.run(insertload)(List(load))
+      sender() ! loads
+    case DeleteLoadsBefore(t: DateTime) =>
+      log.debug(s"received DeleteLoadsBefore $t command")
+      val deleted: List[Long]= h2DB.run(deleteLoadsBefore)(List(t))
+      sender() ! deleted
   }
 }
