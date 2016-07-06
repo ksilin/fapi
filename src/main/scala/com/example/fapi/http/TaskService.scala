@@ -57,9 +57,8 @@ class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit e
     }
   }
 
-  def deleteTask(id: String) = delete {
-    val task = Task(id)
-    onSuccess(taskRepository ? TaskRepository.DeleteTask(task.name)) {
+  def deleteTask(name: String) = delete {
+    onSuccess(taskRepository ? TaskRepository.DeleteTask(name)) {
       case TaskRepository.TaskWillBeDeleted(_) => complete(StatusCodes.Accepted)
       case TaskRepository.TaskNotFound(_)      => complete(StatusCodes.NotFound)
     }

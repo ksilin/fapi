@@ -32,7 +32,7 @@ class Master extends Actor with ActorLogging {
 
   BootstrapData.startGenLoad(loadRepository)(context.system)
   BootstrapData.storeInitTasks(taskRepository)(context.system)
-  BootstrapData.storeInitTaskRuns(taskRunRepository)(context.system)
+  BootstrapData.storeInitTaskRuns(taskRunRepository)
 
   log.info("Up and running")
 

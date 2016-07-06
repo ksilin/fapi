@@ -17,21 +17,24 @@
 package com.example.fapi.http
 
 import akka.actor.ActorRef
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ StatusCode, StatusCodes }
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
-import com.example.fapi.data.{ Task, TaskRepository, TaskRun, TaskRunRepository }
+import com.example.fapi.data.TaskRepository.GetTask
+import com.example.fapi.data.{ Task, TaskRun, TaskRunRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 
-class TaskRunService(taskRunRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
+class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
   import io.circe.generic.auto._
 
   implicit val timeout = internalTimeout
 
-  val route = pathPrefix("taskrun") { pathSingleSlash { taskRunGetAll ~ taskRunPost } }
+  val route = path("taskrun" /) { taskRunGetAll ~ taskRunPost } ~
+    path("taskrun" / IntNumber) { runId => taskRunGet(runId) } ~
+    path("taskrun" / Segment) { taskName => taskRunsGet(taskName) }
 
   def taskRunGetAll = get {
     complete {
@@ -39,12 +42,34 @@ class TaskRunService(taskRunRepository: ActorRef, internalTimeout: Timeout)(impl
     }
   }
 
+  def taskRunGet(runId: Integer) = get {
+    onSuccess((taskRunRepository ? TaskRunRepository.GetTaskRun(runId)).mapTo[List[TaskRun]]) {
+      case Nil => complete(StatusCodes.NotFound)
+      case x   => complete(x)
+    }
+  }
+
+  def taskRunsGet(taskName: String) = get {
+    complete {
+      (taskRunRepository ? TaskRunRepository.GetTaskRuns(taskName)).mapTo[List[TaskRun]]
+    }
+  }
+
   def taskRunPost = post {
-    entity(as[Task]) { (taskRun: Task) =>
-      onSuccess(taskRunRepository ? TaskRepository.AddTask(taskRun.name)) {
-        case TaskRunRepository.TaskRunAdded(_) => complete(StatusCodes.Created)
-        //        case TaskRunRepository.TaskExists(_) => complete(StatusCodes.Conflict)
+    entity(as[String]) { (taskName: String) =>
+      println(s"received request string: $taskName")
+
+      val getTask: Future[List[Task]] = (taskRepository ? GetTask(taskName)).mapTo[List[Task]]
+
+      val res: Future[(StatusCode, Option[String])] = getTask flatMap { tasks =>
+        tasks match {
+          case Nil => Future.successful((StatusCodes.NotFound, None))
+          case l => taskRunRepository ? TaskRunRepository.AddTaskRun(taskName) map {
+            case TaskRunRepository.TaskRunAdded(tr) => (StatusCodes.Created, tr.id.map(_.toString))
+          }
+        }
       }
+      complete(res)
     }
   }
 

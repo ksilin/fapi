@@ -52,7 +52,7 @@ object HttpService extends HttpConfig {
 
     val loadRoute: Route = new LoadService(loadRepository, internalTimeout).route
     val taskRoute: Route = new TaskService(taskRepository, internalTimeout).route
-    val taskRunRoute: Route = new TaskRunService(taskRunRepository, internalTimeout).route
+    val taskRunRoute: Route = new TaskRunService(taskRunRepository, taskRepository, internalTimeout).route
     val fullRoute = assets ~ loadRoute ~ taskRoute ~ taskRunRoute
 
     val authRoute: Route = authenticateBasic(realm = "fapi", simplePassAuth) { userName =>

@@ -37,17 +37,12 @@ object BootstrapData extends LazyLogging {
   val initTasks = List("import_db1", "import_db2")
 
   def storeInitTasks(taskRepo: ActorRef)(implicit actorSystem: ActorSystem) = {
-    val scheduler = actorSystem.scheduler
-    implicit val executor = actorSystem.dispatcher
     initTasks map { t => taskRepo ! AddTask(t) }
   }
 
-  def storeInitTaskRuns(taskRunGen: ActorRef)(implicit actorSystem: ActorSystem) = {
-    val scheduler = actorSystem.scheduler
-    implicit val executor = actorSystem.dispatcher
-
+  def storeInitTaskRuns(taskRunRepo: ActorRef) = {
     initTasks foreach { taskName =>
-      taskRunGen ! AddTaskRun(taskName)
+      taskRunRepo ! AddTaskRun(taskName)
     }
   }
 
