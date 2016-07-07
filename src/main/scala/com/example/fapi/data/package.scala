@@ -19,7 +19,6 @@ package com.example.fapi
 import java.time.{ Instant, LocalDateTime, ZoneOffset }
 import java.util.Date
 
-import com.example.fapi.http.ClusterConfig
 import io.getquill.naming.Literal
 import io.getquill.sources.sql.idiom.H2Dialect
 import io.getquill.{ JdbcSourceConfig, QueryProbing, _ }
@@ -74,6 +73,6 @@ package object data {
 
   case class TaskStart(name: String, startedAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, id: Option[Int] = None)
   case class TaskEnd(name: String, doneAt: DateTime = DateTime.now(), successful: Boolean = true, msg: Option[String], id: Option[Int] = None)
-  case class TaskRun(name: String, startedAt: DateTime = DateTime.now(), doneAt: Option[DateTime] = None, successful: Boolean = true, msg: Option[String] = None, id: Option[Int] = None)
+  case class TaskRun(name: String, createdAt: DateTime = DateTime.now(), startedAt: Option[DateTime] = None, doneAt: Option[DateTime] = None, successful: Boolean = true, msg: Option[String] = None, id: Option[Int] = None)
 
 }

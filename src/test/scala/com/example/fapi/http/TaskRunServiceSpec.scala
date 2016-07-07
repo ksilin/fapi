@@ -21,14 +21,16 @@ import akka.http.scaladsl.model.{HttpRequest, ResponseEntity}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.pattern.ask
-import akka.util.Timeout
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+import akka.util.{ByteString, Timeout}
 import com.example.fapi.data.TaskRunRepository.{AddTaskRun, GetAll, TaskRunAdded}
 import com.example.fapi.data.{BootstrapData, Load, TaskRepository, TaskRun, TaskRunRepository}
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
 
-import scala.concurrent.Await
+import scala.collection.immutable.WrappedString
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with BeforeAndAfterAll with CirceSupport {
@@ -36,6 +38,10 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
   implicit val timeout: Timeout = 10 seconds
   val repo = system.actorOf(TaskRunRepository.props(), TaskRunRepository.Name)
   val taskRepo = system.actorOf(TaskRepository.props(), TaskRepository.Name)
+
+  implicit val mat = ActorMaterializer()
+
+  BootstrapData.storeInitTasks(taskRepo)
   BootstrapData.storeInitTaskRuns(repo)
   val taskrunService = new TaskRunService(repo, taskRepo, 10 seconds)
   val route = taskrunService.route
@@ -101,12 +107,10 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
       println(s"sending $request")
       request ~> route ~> check {
         status should be(Created)
-        contentType should be(`text/plain(UTF-8)`)
+        contentType should be(`application/json`)
         headers should be(`empty`)
-        val entity: ResponseEntity = response.entity
-        val entStr: String = entity.toString
-        println(entStr)
-        entStr.length should be > 0
+        val rs = responseAs[String]
+        println(s"direct: $rs")
       }
     }
 
@@ -116,46 +120,30 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
       }
     }
 
-    // TODO - on conflict, advise to delete the running instance first
-    "should not add taskrun if taskrun for same task unfinished" in {
-      Post("/taskrun/", TaskRun(taskName)) ~> route ~> check {
-        status should be(Conflict)
-        contentType should be(`text/plain(UTF-8)`)
-        headers should be(`empty`)
-        val entity: ResponseEntity = response.entity
-        val entStr: String = entity.toString
-        println(entStr)
-        entStr.length should be > 0
-      }
-    }
-
-    // TODO - DELETE appropriate for cancelling?
-    "should delete existing taskrun" in {
-      Delete("/taskrun/", TaskRun(taskName)) ~> route ~> check {
+    "should delete pending taskrun" in {
+      // TODO - start task run
+      Delete("/taskrun/", taskName) ~> route ~> check {
         status should be(Accepted)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)
-        val entity: ResponseEntity = response.entity
-        val entStr: String = entity.toString
-        println(entStr)
-        entStr.length should be > 0
+        responseAs[String].length should be > 0
       }
     }
 
     "should not delete non-existing taskrun" in {
+      Delete("/taskrun/123") ~> route ~> check {
+        status should be(NotFound)
+      }
+    }
+
+    "should not delete finished taskrun" in {
+      // TODO - create finished taskRun
       Delete("/taskrun/", TaskRun("nonexisting")) ~> route ~> check {
         status should be(NotFound)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)
-        val entity: ResponseEntity = response.entity
-        val entStr: String = entity.toString
-        println(entStr)
-        entStr.length should be > 0
+        responseAs[String].length should be > 0
       }
     }
-
-    // TODO - put
-
-    // TODO - test rejection: http://doc.akka.io/docs/akka/2.4.7/scala/http/routing-dsl/testkit.html
   }
 }
