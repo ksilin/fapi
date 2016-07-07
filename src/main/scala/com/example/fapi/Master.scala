@@ -17,7 +17,7 @@
 package com.example.fapi
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, SupervisorStrategy, Terminated }
-import com.example.fapi.data.{ BootstrapData, LoadRepository, TaskRepository, TaskRunRepository }
+import com.example.fapi.data.{ BootstrapData, LoadRepository, TaskRepository, TaskRunRepository, TaskRunner }
 import com.example.fapi.http.HttpService
 
 import concurrent.duration._
@@ -30,9 +30,12 @@ class Master extends Actor with ActorLogging {
   private val taskRunRepository = context.watch(createTaskRunRepository())
   context.watch(createHttpService(loadRepository, taskRepository, taskRunRepository))
 
+  private val taskRunner = context.watch(createTaskRunner(taskRunRepository))
+
   BootstrapData.startGenLoad(loadRepository)(context.system)
   BootstrapData.storeInitTasks(taskRepository)(context.system)
   BootstrapData.storeInitTaskRuns(taskRunRepository)(context.system)
+  BootstrapData.scheduleTaskRuns(taskRunner)(context.system)
 
   log.info("Up and running")
 
@@ -46,6 +49,10 @@ class Master extends Actor with ActorLogging {
 
   protected def createTaskRepository(): ActorRef = {
     context.actorOf(TaskRepository.props(), TaskRepository.Name)
+  }
+
+  protected def createTaskRunner(taskRunRepo: ActorRef): ActorRef = {
+    context.actorOf(TaskRunner.props(taskRunRepo), TaskRunner.Name)
   }
 
   protected def createTaskRunRepository(): ActorRef = {

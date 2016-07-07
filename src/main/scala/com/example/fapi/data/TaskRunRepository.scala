@@ -16,7 +16,7 @@
 
 package com.example.fapi.data
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ Actor, ActorLogging, Props }
 import org.joda.time.DateTime
 
 import scala.util.Random
@@ -86,11 +86,11 @@ class TaskRunRepository extends Actor with ActorLogging {
       taskRuns = taskRun :: taskRuns
       sender() ! TaskRunAdded(taskRun)
 
-    case GetPending => sender() ! pending()
-    case GetRunning => sender() ! running()
-    case GetFinished => sender() ! finished()
+    case GetPending              => sender() ! pending()
+    case GetRunning              => sender() ! running()
+    case GetFinished             => sender() ! finished()
     case GetFinishedSuccessfully => sender() ! finished().filter(_.successful)
-    case GetFailed => sender() ! finished().filterNot(_.successful)
+    case GetFailed               => sender() ! finished().filterNot(_.successful)
 
     case TaskRunStart(id) => pending().filter(_.id == Some(id)) match {
       case Nil => sender() ! RunNotPending(id)

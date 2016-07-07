@@ -16,15 +16,16 @@
 
 package com.example.fapi.data
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
 import akka.util.Timeout
 import com.example.fapi.data.TaskRepository.AddTask
 import com.example.fapi.data.TaskRunRepository._
-import com.example.fapi.data.sources.LoadGen.{GenLoad, Purge}
+import com.example.fapi.data.TaskRunner.StartTask
+import com.example.fapi.data.sources.LoadGen.{ GenLoad, Purge }
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 object BootstrapData extends LazyLogging {
@@ -35,6 +36,13 @@ object BootstrapData extends LazyLogging {
 
     scheduler.schedule(Duration.Zero, 100 millis, loadGen, GenLoad)
     scheduler.schedule(1 second, 5 minutes, loadGen, Purge)
+  }
+
+  def scheduleTaskRuns(taskRunner: ActorRef)(implicit actorSystem: ActorSystem) = {
+    val scheduler = actorSystem.scheduler
+    implicit val executor = actorSystem.dispatcher
+
+    scheduler.schedule(Duration.Zero, 30 seconds, taskRunner, StartTask)
   }
 
   val initTasks = List("import_db1", "import_db2")
@@ -48,8 +56,8 @@ object BootstrapData extends LazyLogging {
     implicit val executor = actorSystem.dispatcher
 
     val storeRuns: List[Future[TaskRunAdded]] = initTasks map { taskName =>
-       (taskRunRepo ? AddTaskRun(taskName)).mapTo[TaskRunAdded]
-      }
+      (taskRunRepo ? AddTaskRun(taskName)).mapTo[TaskRunAdded]
+    }
     val runsStored = Future.sequence(storeRuns)
 
     val waitForIt: Future[List[Any]] = runsStored flatMap { runs =>
