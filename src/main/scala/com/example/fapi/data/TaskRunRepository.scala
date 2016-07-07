@@ -16,7 +16,8 @@
 
 package com.example.fapi.data
 
-import akka.actor.{ Actor, ActorLogging, Props }
+import akka.actor.{Actor, ActorLogging, Props}
+import org.joda.time.DateTime
 
 import scala.util.Random
 
@@ -24,13 +25,37 @@ object TaskRunRepository {
 
   case object GetAll
 
+  case object GetPending
+
+  case object GetRunning
+
+  case object GetFinished
+
+  case object GetFinishedSuccessfully
+
+  case object GetFailed
+
   case class GetTaskRuns(name: String)
+
   case class GetTaskRun(id: Int)
-  // TODO - insufficient - need start & end data at least
+
   case class AddTaskRun(name: String)
 
   case class TaskRunAdded(taskRun: TaskRun)
+
   case class TaskUnknown(name: String)
+
+  case class TaskRunStart(id: Int)
+
+  case class TaskRunSuccess(id: Int, message: Option[String] = None)
+
+  case class TaskRunFailure(id: Int, message: Option[String] = None)
+
+  case class TaskRunUpdated(id: Int)
+
+  case class RunNotPending(id: Int)
+
+  case class RunNotRunning(id: Int)
 
   final val Name = "taskRun-repository"
 
@@ -41,6 +66,7 @@ class TaskRunRepository extends Actor with ActorLogging {
 
   import TaskRunRepository._
 
+  // TODO - superbad - no internal state here, thats what db is for
   private var taskRuns = List.empty[TaskRun]
 
   override def receive = {
@@ -54,11 +80,44 @@ class TaskRunRepository extends Actor with ActorLogging {
     case GetTaskRun(id: Int) =>
       log.debug(s"received GetTaskRun $id command")
       sender() ! taskRuns.filter(_.id == Some(id))
-    // TODO - service should control for existence of Task first
     case AddTaskRun(name) =>
       log.info(s"Adding new taskRun with name $name")
       val taskRun = TaskRun(name, id = Some(Random.nextInt(Int.MaxValue)))
       taskRuns = taskRun :: taskRuns
       sender() ! TaskRunAdded(taskRun)
+
+    case GetPending => sender() ! pending()
+    case GetRunning => sender() ! running()
+    case GetFinished => sender() ! finished()
+    case GetFinishedSuccessfully => sender() ! finished().filter(_.successful)
+    case GetFailed => sender() ! finished().filterNot(_.successful)
+
+    case TaskRunStart(id) => pending().filter(_.id == Some(id)) match {
+      case Nil => sender() ! RunNotPending(id)
+      case head :: Nil =>
+
+        taskRuns = head.copy(startedAt = Some(DateTime.now)) :: taskRuns.filterNot(_.id == Some(id))
+        sender() ! TaskRunUpdated(id)
+    }
+    case TaskRunSuccess(id, message) => running().filter(_.id == Some(id)) match {
+      case Nil => sender() ! RunNotRunning(id)
+      case head :: Nil =>
+
+        taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message) :: taskRuns.filterNot(_.id == Some(id))
+        sender() ! TaskRunUpdated(id)
+    }
+    case TaskRunFailure(id, message) => running().filter(_.id == Some(id)) match {
+      case Nil => sender() ! RunNotRunning(id)
+      case head :: Nil =>
+
+        taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message, successful = false) :: taskRuns.filterNot(_.id == Some(id))
+        sender() ! TaskRunUpdated(id)
+    }
   }
+
+  def finished() = taskRuns.filter(tr => tr.doneAt.isDefined)
+
+  def running() = taskRuns.filter(tr => tr.startedAt.isDefined && tr.doneAt.isEmpty)
+
+  def pending() = taskRuns.filterNot(_.startedAt.isDefined)
 }
