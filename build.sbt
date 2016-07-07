@@ -2,6 +2,8 @@ lazy val fapi = project
   .in(file("."))
   .enablePlugins(AutomateHeaderPlugin, GitVersioning, JavaAppPackaging)
 
+//parallelExecution in Test := false
+
 libraryDependencies ++= Vector(
 
   Library.scalaLogging,

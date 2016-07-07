@@ -47,6 +47,10 @@ object TaskRunRepository {
 
   case class TaskRunStart(id: Int)
 
+  case class Delete(id: Int)
+
+  case class Deleted(id: Int)
+
   case class TaskRunSuccess(id: Int, message: Option[String] = None)
 
   case class TaskRunFailure(id: Int, message: Option[String] = None)
@@ -91,6 +95,10 @@ class TaskRunRepository extends Actor with ActorLogging {
     case GetFinished             => sender() ! finished()
     case GetFinishedSuccessfully => sender() ! finished().filter(_.successful)
     case GetFailed               => sender() ! finished().filterNot(_.successful)
+
+    case Delete(id) =>
+      taskRuns = taskRuns.filterNot(_.id == Some(id))
+      sender() ! Deleted(id)
 
     case TaskRunStart(id) => pending().filter(_.id == Some(id)) match {
       case Nil => sender() ! RunNotPending(id)

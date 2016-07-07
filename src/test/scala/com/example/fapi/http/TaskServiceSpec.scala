@@ -20,26 +20,18 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.ResponseEntity
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.example.fapi.data.{Task, TaskRepository}
+import com.example.fapi.data.{ BootstrapData, Task, TaskRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
+import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 
 import scala.concurrent.duration._
 
-// extends TestKit(ActorSystem("taskServiceSpec"))
 class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with BeforeAndAfterAll with CirceSupport {
-
 
   val repo = system.actorOf(TaskRepository.props(), TaskRepository.Name)
   val taskService = new TaskService(repo, 10 seconds)
   val route = taskService.route
-
-  // TODO - the table is created, do fill it
-  //  override def beforeAll() = {
-  //    repo.createTable()
-  //    Await.result(repo.store(List(rec)), 5 seconds)
-  //  }
-  //  override def afterAll() = cass.close()
+  BootstrapData.storeInitTasks(repo)(system)
 
   "Task service" - {
     import io.circe.generic.auto._
@@ -52,13 +44,12 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
         headers should be(`empty`)
         //        responseAs[String].length should be > 0
         val tasks: List[Task] = responseAs[List[Task]]
-        tasks.size should be(2)
+        tasks.size should be(BootstrapData.initTasks.size)
       }
     }
 
-
     "should add task" in {
-      Post("/task/", Task("new task")) ~> route ~> check {
+      Post("/task/", Task("new_task")) ~> route ~> check {
         status should be(Created)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)
@@ -70,7 +61,7 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
     }
 
     "should not add existing task" in {
-      Post("/task/", Task("import db1")) ~> route ~> check {
+      Post("/task/", Task("import_db1")) ~> route ~> check {
         status should be(Conflict)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)
@@ -82,7 +73,7 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
     }
 
     "should delete existing task" in {
-      Delete("/task/", Task("import db1")) ~> route ~> check {
+      Delete("/task/import_db1") ~> route ~> check {
         status should be(Accepted)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)
@@ -94,7 +85,7 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
     }
 
     "should not delete non-existing task" in {
-      Delete("/task/", Task("nonexisting")) ~> route ~> check {
+      Delete("/task/nonexisting") ~> route ~> check {
         status should be(NotFound)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)

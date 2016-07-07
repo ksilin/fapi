@@ -1,38 +1,55 @@
+/*
+ * Copyright 2016 ksilin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.fapi.data
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import akka.testkit.{TestActorRef, TestKit}
+import akka.testkit.{ TestActorRef, TestKit }
 import akka.util.Timeout
 import com.example.fapi.data.LoadRepository._
 import com.example.fapi.http.ClusterConfig
 import com.typesafe.scalalogging.LazyLogging
 import org.joda.time.DateTime
-import org.scalatest.{AsyncFreeSpecLike, BeforeAndAfterAll, Matchers}
+import org.scalatest.{ AsyncFreeSpecLike, BeforeAndAfterAll, Matchers }
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 
 class LoadRepositorySpec extends TestKit(ActorSystem("LoadRepoSpec")) with AsyncFreeSpecLike with Matchers
-  with BeforeAndAfterAll with LazyLogging with ClusterConfig {
+    with BeforeAndAfterAll with LazyLogging with ClusterConfig {
 
   implicit val timeout: Timeout = 10 seconds
   val repo = TestActorRef(new LoadRepository)
 
   private val count: Int = 4
 
-  // TODO - beforeAll runs multiple times
+  // TODO - beforeAll runs multiple times - what gives?
 
   override def beforeAll() = {
     logger.info("-----------------------")
     logger.info(s"beforeAll running!")
     logger.info("-----------------------")
     val reps: List[Int] = (0 until count).to[List]
-    val stored: List[Long] = machines flatMap { machine => reps flatMap { i =>
+    val stored: List[Long] = machines flatMap { machine =>
+      reps flatMap { i =>
 
-      val f = repo ? StoreLoad(Load(machine, time = DateTime.now().minus(i * 1000)))
-      Await.result(f, 3 seconds).asInstanceOf[List[Long]]
-    }
+        val f = repo ? StoreLoad(Load(machine, time = DateTime.now().minus(i * 1000)))
+        Await.result(f, 3 seconds).asInstanceOf[List[Long]]
+      }
     }
     logger.info(s"stored $stored")
   }

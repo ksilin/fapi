@@ -1,15 +1,27 @@
+/*
+ * Copyright 2016 ksilin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.fapi.data
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.testkit.TestActors._
-import akka.testkit.TestActors
-import akka.testkit.{DefaultTimeout, ImplicitSender, TestKit}
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
 import com.example.fapi.data.TaskRepository.AddTask
 import com.example.fapi.data.TaskRunRepository.AddTaskRun
-import com.example.fapi.data.sources.LoadGen.{GenLoad, Purge}
-import org.scalatest.{FreeSpecLike, Matchers}
-
-import concurrent.duration._
+import com.example.fapi.data.sources.LoadGen.{ GenLoad, Purge }
+import org.scalatest.{ FreeSpecLike, Matchers }
 
 class BootstrapDataSpec extends TestKit(ActorSystem("bootstrapDataSpecSystem")) with FreeSpecLike with Matchers {
 
@@ -24,15 +36,15 @@ class BootstrapDataSpec extends TestKit(ActorSystem("bootstrapDataSpecSystem")) 
     "adds initial tasks" in {
       BootstrapData.storeInitTasks(testActor)
       val expTasks: List[AddTask] = BootstrapData.initTasks map (AddTask(_))
-      expectMsgAnyOf(expTasks:_*)
-      expectMsgAnyOf(expTasks:_*)
+      (0 until expTasks.size).foreach { _ => expectMsgAnyOf(expTasks: _*) }
     }
 
     "adds runs for initial tasks" in {
+      // TODO - the current method is a mess
+      //      val taskRuns: (Future[List[TaskRunAdded]], Future[List[Any]]) =
       BootstrapData.storeInitTaskRuns(testActor)
       val expTasks: List[AddTaskRun] = BootstrapData.initTasks map (AddTaskRun(_))
-      expectMsgAnyOf(expTasks:_*)
-      expectMsgAnyOf(expTasks:_*)
+      (0 until expTasks.size).foreach { _ => expectMsgAnyOf(expTasks: _*) }
     }
 
   }

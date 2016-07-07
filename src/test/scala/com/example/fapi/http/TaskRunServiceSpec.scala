@@ -17,20 +17,18 @@
 package com.example.fapi.http
 
 import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model.{HttpRequest, ResponseEntity}
+import akka.http.scaladsl.model.{ HttpRequest, ResponseEntity }
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
-import akka.util.{ByteString, Timeout}
-import com.example.fapi.data.TaskRunRepository.{AddTaskRun, GetAll, TaskRunAdded}
-import com.example.fapi.data.{BootstrapData, Load, TaskRepository, TaskRun, TaskRunRepository}
+import akka.util.Timeout
+import com.example.fapi.data.TaskRunRepository._
+import com.example.fapi.data.{ BootstrapData, TaskRepository, TaskRun, TaskRunRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
+import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 
-import scala.collection.immutable.WrappedString
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with BeforeAndAfterAll with CirceSupport {
@@ -48,7 +46,7 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
 
   val getRuns = repo ? GetAll
   val runs = Await.result(getRuns, 3 seconds).asInstanceOf[List[TaskRun]]
-  val taskName: String = BootstrapData.initTasks.head
+  val taskName: String = BootstrapData.initTasks.head // TODO - extract number of stored task runs here
 
   "TaskRun service" - {
     import io.circe.generic.auto._
@@ -59,7 +57,7 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
         contentType should be(`application/json`)
         headers should be(`empty`)
         val taskruns: List[TaskRun] = responseAs[List[TaskRun]]
-        taskruns.size should be(BootstrapData.initTasks.size) // one run per task
+        taskruns.size should be(BootstrapData.initTasks.size) // 1 run per task
       }
     }
 
@@ -121,12 +119,13 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
     }
 
     "should delete pending taskrun" in {
-      // TODO - start task run
-      Delete("/taskrun/", taskName) ~> route ~> check {
+      val getPending: Future[List[TaskRun]] = (repo ? GetPending).mapTo[List[TaskRun]]
+      val pending = Await.result(getPending, 10 seconds)
+      val runId: Int = pending.head.id.get
+      Delete(s"/taskrun/$runId") ~> route ~> check {
         status should be(Accepted)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)
-        responseAs[String].length should be > 0
       }
     }
 
@@ -137,12 +136,14 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
     }
 
     "should not delete finished taskrun" in {
-      // TODO - create finished taskRun
-      Delete("/taskrun/", TaskRun("nonexisting")) ~> route ~> check {
-        status should be(NotFound)
-        contentType should be(`text/plain(UTF-8)`)
+      val getFinished: Future[List[TaskRun]] = (repo ? GetFinished).mapTo[List[TaskRun]]
+      val finished = Await.result(getFinished, 10 seconds)
+      val runId: Int = finished.head.id.get
+      Delete(s"/taskrun/$runId") ~> route ~> check {
+        status should be(Conflict)
+        contentType should be(`application/json`)
         headers should be(`empty`)
-        responseAs[String].length should be > 0
+        responseAs[String] should be("only pending runs can be deleted")
       }
     }
   }

@@ -33,7 +33,7 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
   implicit val timeout = internalTimeout
 
   val route = path("taskrun" /) { taskRunGetAll ~ taskRunPost } ~
-    path("taskrun" / IntNumber) { runId => taskRunGet(runId) } ~
+    path("taskrun" / IntNumber) { runId => taskRunGet(runId) ~ taskRunDelete(runId) } ~
     path("taskrun" / Segment) { taskName => taskRunsGet(taskName) }
 
   def taskRunGetAll = get {
@@ -49,6 +49,16 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
     }
   }
 
+  def taskRunDelete(runId: Integer) = delete {
+    onSuccess((taskRunRepository ? TaskRunRepository.GetTaskRun(runId)).mapTo[List[TaskRun]]) {
+      case Nil                                     => complete(StatusCodes.NotFound)
+      case head :: Nil if head.startedAt.isDefined => complete(StatusCodes.Conflict, "only pending runs can be deleted")
+      case head :: Nil if head.startedAt.isEmpty =>
+        taskRepository ! TaskRunRepository.Delete(head.id.get)
+        complete(StatusCodes.Accepted)
+    }
+  }
+
   def taskRunsGet(taskName: String) = get {
     complete {
       (taskRunRepository ? TaskRunRepository.GetTaskRuns(taskName)).mapTo[List[TaskRun]]
@@ -57,7 +67,6 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
 
   def taskRunPost = post {
     entity(as[String]) { (taskName: String) =>
-      println(s"received request string: $taskName")
 
       val getTask: Future[List[Task]] = (taskRepository ? GetTask(taskName)).mapTo[List[Task]]
 
