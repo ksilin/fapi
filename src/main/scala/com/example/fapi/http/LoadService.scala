@@ -17,21 +17,30 @@
 package com.example.fapi.http
 
 import akka.actor.ActorRef
-import akka.http.scaladsl.server.{ Directives, Route }
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.example.fapi.data.{ Load, LoadRepository }
+import com.example.fapi.data.{Load, LoadRepository}
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import io.circe.generic.auto._
+import io.swagger.annotations._
+import javax.ws.rs.Path
 
-import scala.concurrent.{ ExecutionContext, Future }
+import akka.http.scaladsl.model.headers.Authorization
 
+import scala.concurrent.{ExecutionContext, Future}
+
+@Path("/load") // @Path annotation required for Swagger
+@Api(value = "/load", produces = "application/json", authorizations = {
+  @Authorization()
+})
 class LoadService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
 
   implicit val timeout = internalTimeout
 
   val route = pathPrefix("load") { pathSingleSlash { getAll } }
 
+  @ApiOperation(value = "Get list of all loads", nickname = "getAllLoads", httpMethod = "GET",
+    response = classOf[Load], responseContainer = "Set")
   def getAll: Route = get {
     complete {
       val getLoads: Future[Any] = loadRepository ? LoadRepository.GetLoad

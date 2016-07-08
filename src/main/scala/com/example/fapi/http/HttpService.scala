@@ -25,6 +25,7 @@ import akka.http.scaladsl.server.{ Directives, Route }
 import akka.pattern.pipe
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
+import ch.megard.akka.http.cors.CorsDirectives._
 
 import scala.concurrent.ExecutionContext
 
@@ -53,13 +54,15 @@ object HttpService extends HttpConfig {
     val loadRoute: Route = new LoadService(loadRepository, internalTimeout).route
     val taskRoute: Route = new TaskService(taskRepository, internalTimeout).route
     val taskRunRoute: Route = new TaskRunService(taskRunRepository, taskRepository, internalTimeout).route
-    val fullRoute = assets ~ loadRoute ~ taskRoute ~ taskRunRoute
+    val swaggerDocRoute: Route = new SwaggerDocService(httpInterface, httpPort, system).routes
+    val fullRoute = assets ~ loadRoute ~ taskRoute ~ taskRunRoute ~ swaggerDocRoute
 
     val authRoute: Route = authenticateBasic(realm = "fapi", simplePassAuth) { userName =>
       fullRoute
     }
+    val corsRoute = cors() { authRoute }
 
-    DebuggingDirectives.logRequest("request", Logging.DebugLevel)(authRoute)
+    DebuggingDirectives.logRequest("request", Logging.DebugLevel)(corsRoute)
   }
 }
 

@@ -11,6 +11,7 @@ libraryDependencies ++= Vector(
   Library.janino,
 
   Library.akkaHttp,
+  Library.akkaHttpCors,
   Library.akkaHttpCirce,
   Library.circe,
   Library.circeParser,

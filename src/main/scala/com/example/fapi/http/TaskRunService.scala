@@ -70,12 +70,10 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
 
       val getTask: Future[List[Task]] = (taskRepository ? GetTask(taskName)).mapTo[List[Task]]
 
-      val res: Future[(StatusCode, Option[String])] = getTask flatMap { tasks =>
-        tasks match {
-          case Nil => Future.successful((StatusCodes.NotFound, None))
-          case l => taskRunRepository ? TaskRunRepository.AddTaskRun(taskName) map {
-            case TaskRunRepository.TaskRunAdded(tr) => (StatusCodes.Created, tr.id.map(_.toString))
-          }
+      val res: Future[(StatusCode, Option[String])] = getTask flatMap {
+        case Nil => Future.successful((StatusCodes.NotFound, None))
+        case l => taskRunRepository ? TaskRunRepository.AddTaskRun(taskName) map {
+          case TaskRunRepository.TaskRunAdded(tr) => (StatusCodes.Created, tr.id.map(_.toString))
         }
       }
       complete(res)

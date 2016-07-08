@@ -3,6 +3,7 @@ import sbt._
 object Version {
   final val Scala     = "2.11.8"
   final val akka = "2.4.7"
+  final val akkaHttpCors = "0.1.2"
   final val ScalaTest = "3.0.0-RC3"
   final val circe = "0.3.0" // "0.4.1" is the latest, but 0.3.0 is required by akka-http-circe
   final val swaggerAkkaHttp = "0.7.1"
@@ -15,6 +16,7 @@ object Library {
 
   val akkaHttp = "com.typesafe.akka" %% "akka-http-experimental" % Version.akka
   val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
+  val akkaHttpCors = "ch.megard" %% "akka-http-cors" % Version.akkaHttpCors
   val circe = "io.circe" %% "circe-generic" % Version.circe
   val circeParser = "io.circe" %% "circe-parser" % Version.circe
   val circeJava8 = "io.circe" %% "circe-java8" % Version.circe
