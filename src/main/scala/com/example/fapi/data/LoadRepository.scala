@@ -22,8 +22,10 @@ import org.joda.time.DateTime
 
 object LoadRepository {
 
-  case object GetLoad
-  case class GetLoadFor(machine: String)
+  case object GetLastLoads
+  case class GetXLastLoads(count: Int)
+  case class GetLastLoadFor(machine: String)
+  case class GetXLastLoadsFor(machine: String, count: Int)
   case class GetLoadStartingAt(t: DateTime)
   case class GetLoadStartingAtFor(t: DateTime, machine: String)
   case class DeleteLoadsBefore(t: DateTime)
@@ -38,13 +40,21 @@ class LoadRepository extends Actor with ActorLogging with ClusterConfig {
   import LoadRepository._
 
   override def receive = {
-    case GetLoad =>
+    case GetLastLoads =>
       log.debug("received GetLoad command")
-      val lastLoads: List[Load] = machines flatMap { machine => h2DB.run(lastLoadFor)(machine) }
+      val lastLoads: List[Load] = machines flatMap { machine => h2DB.run(xlastLoadsFor)(machine, 1) }
       sender() ! lastLoads
-    case GetLoadFor(machine: String) =>
+    case GetLastLoadFor(machine: String) =>
       log.debug(s"received GetLoadFor $machine command")
-      val lastLoads: List[Load] = h2DB.run(lastLoadFor)(machine)
+      val lastLoads: List[Load] = h2DB.run(xlastLoadsFor)(machine, 1)
+      sender() ! lastLoads
+    case GetXLastLoads(count: Int) =>
+      log.debug("received GetLoad command")
+      val lastLoads: List[Load] = machines flatMap { machine => h2DB.run(xlastLoadsFor)(machine, count) }
+      sender() ! lastLoads
+    case GetXLastLoadsFor(machine: String, count: Int) =>
+      log.debug(s"received GetLoadFor $machine command")
+      val lastLoads: List[Load] = h2DB.run(xlastLoadsFor)(machine, count)
       sender() ! lastLoads
     case GetLoadStartingAt(t: DateTime) =>
       log.debug(s"received GetLoadStartingAt(${t}) command")

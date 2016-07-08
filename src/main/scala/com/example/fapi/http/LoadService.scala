@@ -17,32 +17,57 @@
 package com.example.fapi.http
 
 import akka.actor.ActorRef
-import akka.http.scaladsl.server.{ Directives, Route }
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.example.fapi.data.{ Load, LoadRepository }
+import com.example.fapi.data.{Load, LoadRepository}
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.swagger.annotations._
 import javax.ws.rs.Path
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
 
 @Path("/load") // @Path annotation required for Swagger
 @Api(value = "/load", produces = "application/json")
 class LoadService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
+
   import io.circe.generic.auto._
 
   implicit val timeout = internalTimeout
+  val maxPerMachine: Int = 1000
 
-  val route = path("load" / ) { getAll }
+  val route = path("load" /) {
+    getLast
+  } ~
+    path("load" / "last" / IntNumber) { count => getXLast(count) } ~
+    path("load" / Segment) { machine => getLastFor(machine) } ~
+    path("load" / Segment / "last" / IntNumber) { (machine, count) => getXLastFor(machine, count) }
 
   @ApiOperation(value = "Get list of all loads", nickname = "getAllLoads", httpMethod = "GET",
     response = classOf[Load], responseContainer = "Set")
-  def getAll: Route = get {
+  def getLast: Route = get {
     complete {
-      val getLoads: Future[Any] = loadRepository ? LoadRepository.GetLoad
-      val asList: Future[List[Load]] = getLoads.mapTo[List[Load]]
-      asList
+      (loadRepository ? LoadRepository.GetLastLoads).mapTo[List[Load]]
+    }
+  }
+
+  def getLastFor(machine: String): Route = get {
+    complete {
+      (loadRepository ? LoadRepository.GetLastLoadFor(machine)).mapTo[List[Load]]
+    }
+  }
+
+  def getXLast(count: Int): Route = get {
+    complete {
+      val c: Int = math.min(count, maxPerMachine)
+      (loadRepository ? LoadRepository.GetXLastLoads(c)).mapTo[List[Load]]
+    }
+  }
+
+  def getXLastFor(machine: String, count: Int): Route = get {
+    complete {
+      val c: Int = math.min(count, maxPerMachine)
+      (loadRepository ? LoadRepository.GetXLastLoadsFor(machine, c)).mapTo[List[Load]]
     }
   }
 }

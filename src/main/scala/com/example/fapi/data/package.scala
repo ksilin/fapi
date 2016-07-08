@@ -67,7 +67,7 @@ package object data {
 
   val loadsAfterFor = quote { (t: DateTime, machine: String) => query[Load].filter(_.time > t).filter(_.machine == machine) }
 
-  val lastLoadFor = quote { (machine: String) => query[Load].withFilter(_.machine == machine).sortBy(_.time).take(1) }
+  val xlastLoadsFor = quote { (machine: String, count: Int) => query[Load].withFilter(_.machine == machine).sortBy(_.time).take(count) }
 
   case class Task(name: String, createdAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, active: Boolean = true, id: Option[Int] = None)
 

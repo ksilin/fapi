@@ -72,14 +72,14 @@ class LoadRepositorySpec extends TestKit(ActorSystem("LoadRepoSpec")) with Async
     }
 
     "should get the last load for a single machine" in {
-      val getLoads: Future[List[Load]] = (repo ? GetLoadFor(machines.head)) map (_.asInstanceOf[List[Load]])
+      val getLoads: Future[List[Load]] = (repo ? GetLastLoadFor(machines.head)) map (_.asInstanceOf[List[Load]])
       getLoads map { loads =>
         loads.size should be(1)
       }
     }
 
     "should get the last load for all machines" in {
-      val getLoads: Future[List[Load]] = (repo ? GetLoad) map (_.asInstanceOf[List[Load]])
+      val getLoads: Future[List[Load]] = (repo ? GetLastLoads) map (_.asInstanceOf[List[Load]])
       getLoads map { loads =>
         loads.size should be(machines.size)
       }
