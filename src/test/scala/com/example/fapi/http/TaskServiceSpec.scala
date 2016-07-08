@@ -17,12 +17,12 @@
 package com.example.fapi.http
 
 import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model.ResponseEntity
+import akka.http.scaladsl.model.{HttpRequest, ResponseEntity}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.example.fapi.data.{ BootstrapData, Task, TaskRepository }
+import com.example.fapi.data.{BootstrapData, Task, TaskRepository}
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
+import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
 
 import scala.concurrent.duration._
 
@@ -49,7 +49,11 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
     }
 
     "should add task" in {
-      Post("/task/", Task("new_task")) ~> route ~> check {
+      val req: HttpRequest = Post("/task/", Task("new_task"))
+
+      println(s"req: $req")
+
+      req ~> route ~> check {
         status should be(Created)
         contentType should be(`text/plain(UTF-8)`)
         headers should be(`empty`)

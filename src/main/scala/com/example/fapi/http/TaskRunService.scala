@@ -61,7 +61,18 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
 
   def taskRunsGet(taskName: String) = get {
     complete {
-      (taskRunRepository ? TaskRunRepository.GetTaskRuns(taskName)).mapTo[List[TaskRun]]
+
+      println(s"task name: $taskName")
+
+      val msg = taskName match {
+        case "pending"    => TaskRunRepository.GetPending
+        case "running"    => TaskRunRepository.GetRunning
+        case "finished"   => TaskRunRepository.GetFinished
+        case "successful" => TaskRunRepository.GetFinishedSuccessfully
+        case "failed"     => TaskRunRepository.GetFailed
+        case name         => TaskRunRepository.GetTaskRuns(name)
+      }
+      (taskRunRepository ? msg).mapTo[List[TaskRun]]
     }
   }
 
