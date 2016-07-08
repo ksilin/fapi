@@ -16,17 +16,21 @@
 
 package com.example.fapi.http
 
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import akka.pattern.ask
 import com.example.fapi.data.{Load, LoadRepository}
 import de.heikoseeberger.akkahttpcirce.CirceSupport
+import org.joda.time.DateTime
 import org.scalatest.{FreeSpecLike, Matchers}
 
 import concurrent.duration._
+import scala.concurrent.{Await, Future}
 
-// TODO - exchenge ScalatestRouteTest & FreeSpecLike & watch compilation fail
-class LoadServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with CirceSupport {
+// TODO - change places - ScalatestRouteTest & FreeSpecLike & watch compilation fail
+class LoadServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with CirceSupport with ClusterConfig{
 
   implicit val timeout: Timeout = 10 seconds
   val repo = system.actorOf(LoadRepository.props(), LoadRepository.Name)
@@ -35,24 +39,54 @@ class LoadServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
   val route = service.route
 
   implicit val mat = ActorMaterializer()
+  val perMachine = 3
+
+  private val loadCount: Int = 2
+  val getRes: List[Future[Any]] = machines flatMap { machine =>
+    (0 until perMachine).to[List] map { i =>
+      val load = Load(machine, i * 10, i * 5, math.pow(10, i).toInt, DateTime.now().minus(i * 1000))
+      repo ? LoadRepository.StoreLoad(load)
+    }
+  }
+  val res = Future.sequence(getRes)
+  val stored = Await.result(res, 10 seconds)
+  println(s"stored loads: $stored")
 
   "Load service" - {
     import io.circe.generic.auto._
 
-    "should return all loads" in {
+    "should return most recent loads for all machines" in {
       Get("/load/") ~> route ~> check {
-        // TODO - add loads
-        responseAs[List[Load]] should be('empty)
+        status should be(StatusCodes.OK)
+        contentType should be(ContentTypes.`application/json`)
+        responseAs[List[Load]].size should be(machines.size)
       }
     }
-    "should return loads for last x sec" in {
-    }
-    "should return all loads for a single machines" in {
-    }
-    "should return the most recent loads for all machines" in {
-    }
-    "should return the most recent loads for a single machine" in {
+
+    "should return last x loads for all machines" in {
+      Get(s"/load/last/$loadCount") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        contentType should be(ContentTypes.`application/json`)
+        responseAs[List[Load]].size should be(machines.size * loadCount)
+      }
     }
 
+    "should return most recent load for a single machines" in {
+      Get(s"/load/${machines.head}") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        contentType should be(ContentTypes.`application/json`)
+        responseAs[List[Load]].size should be(1)
+      }
+    }
+
+    "should return last x loads for a single machines" in {
+      Get(s"/load/${machines.head}/last/$loadCount") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        contentType should be(ContentTypes.`application/json`)
+        responseAs[List[Load]].size should be(loadCount)
+      }
+    }
+
+    // TODO - cap to 1K and test it
   }
 }
