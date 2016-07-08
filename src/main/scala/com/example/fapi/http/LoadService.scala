@@ -34,7 +34,7 @@ class LoadService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   implicit val timeout = internalTimeout
 
-  val route = pathPrefix("load") { pathSingleSlash { getAll } }
+  val route = path("load" / ) { getAll }
 
   @ApiOperation(value = "Get list of all loads", nickname = "getAllLoads", httpMethod = "GET",
     response = classOf[Load], responseContainer = "Set")

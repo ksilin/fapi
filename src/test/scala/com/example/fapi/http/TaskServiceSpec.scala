@@ -17,12 +17,12 @@
 package com.example.fapi.http
 
 import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model.{HttpRequest, ResponseEntity}
+import akka.http.scaladsl.model.{ HttpRequest, ResponseEntity }
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.example.fapi.data.{BootstrapData, Task, TaskRepository}
+import com.example.fapi.data.{ BootstrapData, Task, TaskRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
+import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 
 import scala.concurrent.duration._
 
