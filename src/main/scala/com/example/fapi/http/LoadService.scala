@@ -17,10 +17,10 @@
 package com.example.fapi.http
 
 import akka.actor.ActorRef
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{ Directives, Route }
 import akka.pattern.ask
 import akka.util.Timeout
-import com.example.fapi.data.{Load, LoadRepository}
+import com.example.fapi.data.{ Load, LoadRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.swagger.annotations._
 import javax.ws.rs.Path

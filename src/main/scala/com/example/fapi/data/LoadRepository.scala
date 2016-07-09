@@ -41,19 +41,19 @@ class LoadRepository extends Actor with ActorLogging with ClusterConfig {
 
   override def receive = {
     case GetLastLoads =>
-      log.debug("received GetLoad command")
+      log.debug("received GetLastLoads command")
       val lastLoads: List[Load] = machines flatMap { machine => h2DB.run(xlastLoadsFor)(machine, 1) }
       sender() ! lastLoads
     case GetLastLoadFor(machine: String) =>
-      log.debug(s"received GetLoadFor $machine command")
+      log.debug(s"received GetLastLoadFor $machine command")
       val lastLoads: List[Load] = h2DB.run(xlastLoadsFor)(machine, 1)
       sender() ! lastLoads
     case GetXLastLoads(count: Int) =>
-      log.debug("received GetLoad command")
+      log.debug(s"received GetXLastLoads $count command")
       val lastLoads: List[Load] = machines flatMap { machine => h2DB.run(xlastLoadsFor)(machine, count) }
       sender() ! lastLoads
     case GetXLastLoadsFor(machine: String, count: Int) =>
-      log.debug(s"received GetLoadFor $machine command")
+      log.debug(s"received GetXLastLoadsFor $machine $count command")
       val lastLoads: List[Load] = h2DB.run(xlastLoadsFor)(machine, count)
       sender() ! lastLoads
     case GetLoadStartingAt(t: DateTime) =>

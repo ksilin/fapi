@@ -19,6 +19,7 @@ package com.example.fapi
 import java.time.{ Instant, LocalDateTime, ZoneOffset }
 import java.util.Date
 
+import io.getquill.ast.Desc
 import io.getquill.naming.Literal
 import io.getquill.sources.sql.idiom.H2Dialect
 import io.getquill.{ JdbcSourceConfig, QueryProbing, _ }
@@ -67,7 +68,7 @@ package object data {
 
   val loadsAfterFor = quote { (t: DateTime, machine: String) => query[Load].filter(_.time > t).filter(_.machine == machine) }
 
-  val xlastLoadsFor = quote { (machine: String, count: Int) => query[Load].withFilter(_.machine == machine).sortBy(_.time).take(count) }
+  val xlastLoadsFor = quote { (machine: String, count: Int) => query[Load].withFilter(_.machine == machine).sortBy(_.time)(Ord.descNullsLast).take(count) }
 
   case class Task(name: String, createdAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, active: Boolean = true, id: Option[Int] = None)
 

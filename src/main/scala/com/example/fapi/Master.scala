@@ -17,6 +17,7 @@
 package com.example.fapi
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, SupervisorStrategy, Terminated }
+import com.example.fapi.data.sources.LoadGen
 import com.example.fapi.data.{ BootstrapData, LoadRepository, TaskRepository, TaskRunRepository, TaskRunner }
 import com.example.fapi.http.HttpService
 
@@ -26,13 +27,14 @@ class Master extends Actor with ActorLogging {
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   private val loadRepository = context.watch(createLoadRepository())
+  private val loadGen = context.watch(createLoadGen(loadRepository))
   private val taskRepository = context.watch(createTaskRepository())
   private val taskRunRepository = context.watch(createTaskRunRepository())
   context.watch(createHttpService(loadRepository, taskRepository, taskRunRepository))
 
   private val taskRunner = context.watch(createTaskRunner(taskRunRepository))
 
-  BootstrapData.startGenLoad(loadRepository)(context.system)
+  BootstrapData.startGenLoad(loadGen)(context.system)
   BootstrapData.storeInitTasks(taskRepository)(context.system)
   BootstrapData.storeInitTaskRuns(taskRunRepository)(context.system)
   BootstrapData.scheduleTaskRuns(taskRunner)(context.system)
@@ -45,6 +47,10 @@ class Master extends Actor with ActorLogging {
 
   protected def createLoadRepository(): ActorRef = {
     context.actorOf(LoadRepository.props(), LoadRepository.Name)
+  }
+
+  protected def createLoadGen(loadRepo: ActorRef): ActorRef = {
+    context.actorOf(LoadGen.props(loadRepo), LoadGen.Name)
   }
 
   protected def createTaskRepository(): ActorRef = {

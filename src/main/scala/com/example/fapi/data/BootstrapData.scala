@@ -33,8 +33,8 @@ object BootstrapData extends LazyLogging {
   def startGenLoad(loadGen: ActorRef)(implicit actorSystem: ActorSystem) = {
     val scheduler = actorSystem.scheduler
     implicit val executor = actorSystem.dispatcher
-
-    scheduler.schedule(Duration.Zero, 100 millis, loadGen, GenLoad)
+    logger.debug("started load generation")
+    scheduler.schedule(Duration.Zero, 1 second, loadGen, GenLoad)
     scheduler.schedule(1 second, 5 minutes, loadGen, Purge)
   }
 
