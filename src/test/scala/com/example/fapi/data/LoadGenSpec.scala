@@ -32,7 +32,7 @@ class LoadGenSpec extends TestKit(ActorSystem("LoadRepoSpec")) with AsyncFreeSpe
 
   implicit val timeout: Timeout = 10 seconds
   val repo = TestActorRef(new LoadRepository)
-  val loadGen = TestActorRef(new LoadGen)
+  val loadGen = TestActorRef(new LoadGen(repo))
 
   "generating Load data" - {
 

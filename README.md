@@ -42,7 +42,15 @@ delete/unqueue a task run: `http DELETE :9123/taskrun/123` - only works for pend
 
 Please note that you should not call any of your tasks 'pending', 'failed', 'finished' or 'successful'. The filtering endpoints have priority and you would not be able to acces the list fo your taskruns.
 
-### 
+### machine load
+
+most recent load for all machines: `http :9123/load/`
+
+most recent load for a single machine: `http :9123/load/machine1`
+
+x msot recent loads for all machines: `http :9123/load/last/500`  - capped ad 1K per machine
+
+x msot recent loads for a single machines: `http :9123/load/last/500`  - capped ad 1K
 
 
 ## Contribution policy ##

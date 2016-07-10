@@ -16,21 +16,21 @@
 
 package com.example.fapi.http
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.model.{ ContentTypes, StatusCodes }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import akka.pattern.ask
-import com.example.fapi.data.{Load, LoadRepository}
+import com.example.fapi.data.{ Load, LoadRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import org.joda.time.DateTime
-import org.scalatest.{FreeSpecLike, Matchers}
+import org.scalatest.{ FreeSpecLike, Matchers }
 
 import concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 
 // TODO - change places - ScalatestRouteTest & FreeSpecLike & watch compilation fail
-class LoadServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with CirceSupport with ClusterConfig{
+class LoadServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with CirceSupport with ClusterConfig {
 
   implicit val timeout: Timeout = 10 seconds
   val repo = system.actorOf(LoadRepository.props(), LoadRepository.Name)
