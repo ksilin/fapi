@@ -26,7 +26,7 @@ run/enqueue task: `echo '"import_db1"' | http POST :9123/taskrun/` - provided a 
 
 see all task runs: `http :9123/taskrun/`
 
-see one task runs: `http :9123/taskrun/123`
+see one task run: `http :9123/taskrun/123`
 
 see all runs for a task: `http :9123/taskrun/import_db1`
 
@@ -48,9 +48,9 @@ most recent load for all machines: `http :9123/load/`
 
 most recent load for a single machine: `http :9123/load/machine1`
 
-x msot recent loads for all machines: `http :9123/load/last/500`  - capped ad 1K per machine
+x most recent loads for all machines: `http :9123/load/last/500`  - capped ad 1K per machine
 
-x msot recent loads for a single machines: `http :9123/load/last/500`  - capped ad 1K
+x most recent loads for a single machine: `http :9123/load/last/500`  - capped ad 1K
 
 
 ## Contribution policy ##
@@ -64,5 +64,5 @@ This code is open source software licensed under the [Apache 2.0 License](http:/
 ## TODO ##
 
 * swagger 
-* adding task with a string only, not an entire task
+* machine resource
 * proper session

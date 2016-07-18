@@ -4,6 +4,8 @@ lazy val fapi = project
 
 //parallelExecution in Test := false
 
+resolvers += Resolver.sonatypeRepo("snapshots")
+
 libraryDependencies ++= Vector(
 
   Library.scalaLogging,

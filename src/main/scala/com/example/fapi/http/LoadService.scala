@@ -28,7 +28,7 @@ import javax.ws.rs.Path
 import scala.concurrent.ExecutionContext
 
 @Path("/load") // @Path annotation required for Swagger
-@Api(value = "/load", produces = "application/json")
+@Api(value = "/load", produces = "application/json", authorizations = Array(new Authorization(value = "basicAuth")))
 class LoadService(loadRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
 
   import io.circe.generic.auto._

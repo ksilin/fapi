@@ -6,7 +6,7 @@ object Version {
   final val akkaHttpCors = "0.1.2"
   final val ScalaTest = "3.0.0-RC3"
   final val circe = "0.3.0" // "0.4.1" is the latest, but 0.3.0 is required by akka-http-circe
-  final val swaggerAkkaHttp = "0.7.1"
+  final val swaggerAkkaHttp = "0.7.2-SNAPSHOT"
   final val akkaHttpCirce = "1.5.2"
   final val Logback = "1.1.3"
   final val janino = "2.6.1"
