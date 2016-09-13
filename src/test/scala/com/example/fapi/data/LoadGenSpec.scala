@@ -38,16 +38,15 @@ class LoadGenSpec extends TestKit(ActorSystem("LoadRepoSpec")) with AsyncFreeSpe
 
     "should gen single load per machine" in {
 
-      val getLoad: Future[List[Load]] = (repo ? GetLastLoads) map (_.asInstanceOf[List[Load]])
+      val getLoad: Future[List[Load]] = (repo ? GetLastLoads).mapTo[List[Load]]
       getLoad map { loads =>
         loads.size should be(0)
       }
-
       loadGen ! GenLoad
 
       Thread.sleep(100)
 
-      val getLoadAfter: Future[List[Load]] = (repo ? GetLastLoads) map (_.asInstanceOf[List[Load]])
+      val getLoadAfter: Future[List[Load]] = (repo ? GetLastLoads).mapTo[List[Load]]
       getLoadAfter map { loads =>
         loads.size should be(4) // one for each machine
       }

@@ -2,12 +2,12 @@ import sbt._
 
 object Version {
   final val Scala     = "2.11.8"
-  final val akka = "2.4.7"
+  final val akka = "2.4.10"
   final val akkaHttpCors = "0.1.2"
-  final val ScalaTest = "3.0.0-RC3"
-  final val circe = "0.3.0" // "0.4.1" is the latest, but 0.3.0 is required by akka-http-circe
-  final val swaggerAkkaHttp = "0.7.2-SNAPSHOT"
-  final val akkaHttpCirce = "1.5.2"
+  final val ScalaTest = "3.0.0"
+  final val circe = "0.5.1"
+  final val swaggerAkkaHttp = "0.7.2"
+  final val akkaHttpCirce = "1.9.0"
   final val Logback = "1.1.3"
   final val janino = "2.6.1"
 }

@@ -37,7 +37,7 @@ object TaskRunRepository {
 
   case class GetTaskRuns(name: String)
 
-  case class GetTaskRun(id: Int)
+  case class GetTaskRun(id: String)
 
   case class AddTaskRun(name: String)
 
@@ -45,21 +45,21 @@ object TaskRunRepository {
 
   case class TaskUnknown(name: String)
 
-  case class TaskRunStart(id: Int)
+  case class TaskRunStart(id: String)
 
-  case class Delete(id: Int)
+  case class Delete(id: String)
 
-  case class Deleted(id: Int)
+  case class Deleted(id: String)
 
-  case class TaskRunSuccess(id: Int, message: Option[String] = None)
+  case class TaskRunSuccess(id: String, message: Option[String] = None)
 
-  case class TaskRunFailure(id: Int, message: Option[String] = None)
+  case class TaskRunFailure(id: String, message: Option[String] = None)
 
-  case class TaskRunUpdated(id: Int)
+  case class TaskRunUpdated(id: String)
 
-  case class RunNotPending(id: Int)
+  case class RunNotPending(id: String)
 
-  case class RunNotRunning(id: Int)
+  case class RunNotRunning(id: String)
 
   final val Name = "taskRun-repository"
 
@@ -81,12 +81,12 @@ class TaskRunRepository extends Actor with ActorLogging {
     case GetTaskRuns(name: String) =>
       log.debug(s"received GetTaskRuns $name command")
       sender() ! taskRuns.filter(_.name == name)
-    case GetTaskRun(id: Int) =>
-      log.debug(s"received GetTaskRun $id command")
-      sender() ! taskRuns.filter(_.id == Some(id))
+    case GetTaskRun(name: String) =>
+      log.debug(s"received GetTaskRun $name command")
+      sender() ! taskRuns.filter(_.name == name)
     case AddTaskRun(name) =>
       log.info(s"Adding new taskRun with name $name")
-      val taskRun = TaskRun(name, id = Some(Random.nextInt(Int.MaxValue)))
+      val taskRun = TaskRun(name)
       taskRuns = taskRun :: taskRuns
       sender() ! TaskRunAdded(taskRun)
 
@@ -96,31 +96,33 @@ class TaskRunRepository extends Actor with ActorLogging {
     case GetFinishedSuccessfully => sender() ! finished().filter(_.successful)
     case GetFailed               => sender() ! finished().filterNot(_.successful)
 
-    case Delete(id) =>
-      taskRuns = taskRuns.filterNot(_.id == Some(id))
-      sender() ! Deleted(id)
+    case Delete(name) =>
+      taskRuns = taskRuns.filterNot(_.name == name)
+      sender() ! Deleted(name)
 
-    case TaskRunStart(id) => pending().filter(_.id == Some(id)) match {
-      case Nil => sender() ! RunNotPending(id)
-      case head :: Nil =>
-
-        taskRuns = head.copy(startedAt = Some(DateTime.now)) :: taskRuns.filterNot(_.id == Some(id))
-        sender() ! TaskRunUpdated(id)
-    }
-    case TaskRunSuccess(id, message) => running().filter(_.id == Some(id)) match {
-      case Nil => sender() ! RunNotRunning(id)
-      case head :: Nil =>
-
-        taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message) :: taskRuns.filterNot(_.id == Some(id))
-        sender() ! TaskRunUpdated(id)
-    }
-    case TaskRunFailure(id, message) => running().filter(_.id == Some(id)) match {
-      case Nil => sender() ! RunNotRunning(id)
-      case head :: Nil =>
-
-        taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message, successful = false) :: taskRuns.filterNot(_.id == Some(id))
-        sender() ! TaskRunUpdated(id)
-    }
+    case TaskRunStart(name) =>
+      pending().filter(_.name == name) match {
+        case Nil => sender() ! RunNotPending(name)
+        case head :: Nil =>
+          taskRuns = head.copy(startedAt = Some(DateTime.now)) :: taskRuns.filterNot(_.name == name)
+          sender() ! TaskRunUpdated(name)
+      }
+    case TaskRunSuccess(name, message) =>
+      running().filter(_.name == name) match {
+        case Nil => sender() ! RunNotRunning(name)
+        case head :: Nil =>
+          taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message) :: taskRuns.filterNot(_.name == name)
+          sender() ! TaskRunUpdated(name)
+      }
+    case TaskRunFailure(name, message) =>
+      running().filter(_.name == name) match {
+        case Nil => sender() ! RunNotRunning(name)
+        case head :: Nil =>
+          taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message, successful = false) :: taskRuns.filterNot(
+            _.name == name
+          )
+          sender() ! TaskRunUpdated(name)
+      }
   }
 
   def finished() = taskRuns.filter(tr => tr.doneAt.isDefined)

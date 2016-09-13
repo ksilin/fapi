@@ -53,7 +53,7 @@ class TaskRunner(taskRunRepo: ActorRef) extends Actor with ActorLogging {
       log.debug("received StartTask command")
       (taskRunRepo ? GetPending).mapTo[List[TaskRun]] map { runs =>
         runs.headOption map { run =>
-          val id: Int = run.id.get
+          val id: String = run.id
           taskRunRepo ! TaskRunStart(id)
           // TODO - schedule failing tasks as well
           context.system.scheduler.scheduleOnce(taskRunTime, taskRunRepo, TaskRunSuccess(id, Some("all is well")))

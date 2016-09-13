@@ -34,19 +34,21 @@ import scala.concurrent.duration._
 class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers with BeforeAndAfterAll with CirceSupport {
 
   implicit val timeout: Timeout = 10 seconds
-  val repo = system.actorOf(TaskRunRepository.props(), TaskRunRepository.Name)
+  val taskRunRepo = system.actorOf(TaskRunRepository.props(), TaskRunRepository.Name)
   val taskRepo = system.actorOf(TaskRepository.props(), TaskRepository.Name)
 
   implicit val mat = ActorMaterializer()
 
   BootstrapData.storeInitTasks(taskRepo)
-  BootstrapData.storeInitTaskRuns(repo)
-  val taskrunService = new TaskRunService(repo, taskRepo, 10 seconds)
+  val (startedRuns, finishedRuns) = BootstrapData.storeInitTaskRuns(taskRunRepo)
+
+  val taskrunService = new TaskRunService(taskRunRepo, taskRepo, 10 seconds)
   val route = taskrunService.route
 
-  val getRuns = repo ? GetAll
-  val runs = Await.result(getRuns, 3 seconds).asInstanceOf[List[TaskRun]]
-  val taskName: String = BootstrapData.initTasks.head // TODO - extract number of stored task runs here
+  val getRuns = (taskRunRepo ? GetAll).mapTo[List[TaskRun]]
+  val initTaskCount: Int = BootstrapData.initTaskNames.size
+  val runs: List[TaskRun] = Await.result(getRuns, 3 seconds)
+  val taskName: String = BootstrapData.initTaskNames.head // TODO - extract number of stored task runs here
 
   "TaskRun service" - {
     import io.circe.generic.auto._
@@ -57,7 +59,7 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
         contentType should be(`application/json`)
         headers should be(`empty`)
         val taskruns: List[TaskRun] = responseAs[List[TaskRun]]
-        taskruns.size should be(BootstrapData.initTasks.size) // 1 run per task
+        taskruns.size should be(initTaskCount)
       }
     }
 
@@ -67,11 +69,11 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
         contentType should be(`application/json`)
         headers should be(`empty`)
         val taskruns: List[TaskRun] = responseAs[List[TaskRun]]
+        println(taskruns)
         taskruns.size should be(1)
       }
     }
 
-    // TODO - 404 or empty?
     "should return 404 if task not found" in {
       Get(s"/taskrun/gobbledigook") ~> route ~> check {
         status should be(OK)
@@ -84,7 +86,7 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
 
     "should return taskrun by id" in {
       val id = runs.head.id
-      Get(s"/taskrun/${id.get}") ~> route ~> check {
+      Get(s"/taskrun/${id}") ~> route ~> check {
         status should be(OK)
         contentType should be(`application/json`)
         headers should be(`empty`)
@@ -95,7 +97,7 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
     }
 
     "should return 404 if id not found" in {
-      Get("/taskrun/123") ~> route ~> check {
+      Get("/taskrun/doesnotexist") ~> route ~> check {
         status should be(NotFound)
       }
     }
@@ -119,9 +121,9 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
     }
 
     "should delete pending taskrun" in {
-      val getPending: Future[List[TaskRun]] = (repo ? GetPending).mapTo[List[TaskRun]]
+      val getPending: Future[List[TaskRun]] = (taskRunRepo ? GetPending).mapTo[List[TaskRun]]
       val pending = Await.result(getPending, 10 seconds)
-      val runId: Int = pending.head.id.get
+      val runId: String = pending.head.id
       Delete(s"/taskrun/$runId") ~> route ~> check {
         status should be(Accepted)
         contentType should be(`text/plain(UTF-8)`)
@@ -136,9 +138,9 @@ class TaskRunServiceSpec extends FreeSpecLike with ScalatestRouteTest with Match
     }
 
     "should not delete finished taskrun" in {
-      val getFinished: Future[List[TaskRun]] = (repo ? GetFinished).mapTo[List[TaskRun]]
+      val getFinished: Future[List[TaskRun]] = (taskRunRepo ? GetFinished).mapTo[List[TaskRun]]
       val finished = Await.result(getFinished, 10 seconds)
-      val runId: Int = finished.head.id.get
+      val runId: String = finished.head.id
       Delete(s"/taskrun/$runId") ~> route ~> check {
         status should be(Conflict)
         contentType should be(`application/json`)

@@ -44,7 +44,7 @@ class TaskServiceSpec extends FreeSpecLike with ScalatestRouteTest with Matchers
         headers should be(`empty`)
         //        responseAs[String].length should be > 0
         val tasks: List[Task] = responseAs[List[Task]]
-        tasks.size should be(BootstrapData.initTasks.size)
+        tasks.size should be(BootstrapData.initTaskNames.size)
       }
     }
 

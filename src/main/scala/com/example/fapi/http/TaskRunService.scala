@@ -33,8 +33,7 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
   implicit val timeout = internalTimeout
 
   val route = path("taskrun" /) { taskRunGetAll ~ taskRunPost } ~
-    path("taskrun" / IntNumber) { runId => taskRunGet(runId) ~ taskRunDelete(runId) } ~
-    path("taskrun" / Segment) { taskName => taskRunsGet(taskName) }
+    path("taskrun" / Segment) { taskName => taskRunsGet(taskName) ~ taskRunDelete(taskName) }
 
   def taskRunGetAll = get {
     complete {
@@ -42,19 +41,19 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
     }
   }
 
-  def taskRunGet(runId: Integer) = get {
+  def taskRunGet(runId: String) = get {
     onSuccess((taskRunRepository ? TaskRunRepository.GetTaskRun(runId)).mapTo[List[TaskRun]]) {
       case Nil => complete(StatusCodes.NotFound)
       case x   => complete(x)
     }
   }
 
-  def taskRunDelete(runId: Integer) = delete {
+  def taskRunDelete(runId: String) = delete {
     onSuccess((taskRunRepository ? TaskRunRepository.GetTaskRun(runId)).mapTo[List[TaskRun]]) {
       case Nil                                     => complete(StatusCodes.NotFound)
       case head :: Nil if head.startedAt.isDefined => complete(StatusCodes.Conflict, "only pending runs can be deleted")
       case head :: Nil if head.startedAt.isEmpty =>
-        taskRepository ! TaskRunRepository.Delete(head.id.get)
+        taskRepository ! TaskRunRepository.Delete(head.id)
         complete(StatusCodes.Accepted)
     }
   }
@@ -81,10 +80,10 @@ class TaskRunService(taskRunRepository: ActorRef, taskRepository: ActorRef, inte
 
       val getTask: Future[List[Task]] = (taskRepository ? GetTask(taskName)).mapTo[List[Task]]
 
-      val res: Future[(StatusCode, Option[String])] = getTask flatMap {
-        case Nil => Future.successful((StatusCodes.NotFound, None))
+      val res: Future[(StatusCode, String)] = getTask flatMap {
+        case Nil => Future.successful((StatusCodes.NotFound, ""))
         case l => taskRunRepository ? TaskRunRepository.AddTaskRun(taskName) map {
-          case TaskRunRepository.TaskRunAdded(tr) => (StatusCodes.Created, tr.id.map(_.toString))
+          case TaskRunRepository.TaskRunAdded(tr) => (StatusCodes.Created, tr.id)
         }
       }
       complete(res)

@@ -29,3 +29,5 @@ libraryDependencies ++= Vector(
 
 initialCommands := """|import com.example.fapi._
                       |""".stripMargin
+
+parallelExecution in ThisBuild := false

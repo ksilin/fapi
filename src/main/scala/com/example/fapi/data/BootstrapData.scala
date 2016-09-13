@@ -30,6 +30,9 @@ import scala.concurrent.duration._
 
 object BootstrapData extends LazyLogging {
 
+  val initTaskNames = List("import_db1", "import_db2", "import_db3", "gc", "img_convert", "img_inventory")
+  implicit val timeout: Timeout = 10 seconds
+
   def startGenLoad(loadGen: ActorRef)(implicit actorSystem: ActorSystem) = {
     val scheduler = actorSystem.scheduler
     implicit val executor = actorSystem.dispatcher
@@ -45,34 +48,44 @@ object BootstrapData extends LazyLogging {
     scheduler.schedule(Duration.Zero, 30 seconds, taskRunner, StartTask)
   }
 
-  val initTasks = List("import_db1", "import_db2", "import_db3", "gc", "img_convert", "img_inventory")
-  implicit val timeout: Timeout = 10 seconds
-
   def storeInitTasks(taskRepo: ActorRef)(implicit actorSystem: ActorSystem) = {
-    initTasks foreach { t => taskRepo ! AddTask(t) }
+    initTaskNames foreach { t =>
+      taskRepo ! AddTask(t)
+    }
   }
 
-  def storeInitTaskRuns(taskRunRepo: ActorRef)(implicit actorSystem: ActorSystem) = {
+  def storeInitTaskRuns(taskRunRepo: ActorRef)(implicit actorSystem: ActorSystem): (List[TaskRunAdded], List[Any]) = {
     implicit val executor = actorSystem.dispatcher
 
-    val runsStored: Future[List[TaskRunAdded]] = storeRunsForInitTasks(taskRunRepo)
+    val storeRuns: Future[List[TaskRunAdded]] = addPendingRuns(taskRunRepo, initTaskNames)
+    val runsStored = Await.result(storeRuns, 10 seconds)
 
-    val startRuns: Future[List[Any]] = runsStored flatMap { runs =>
-      val run1: TaskRun = runs.head.taskRun
-      val run2: TaskRun = runs.tail.head.taskRun
-      val run3: TaskRun = runs.tail.tail.head.taskRun
+    val startRuns: Future[List[Any]] = {
+      val run1: TaskRun = runsStored.head.taskRun
+      val run2: TaskRun = runsStored.tail.head.taskRun
 
-      val t1Run = taskRunRepo ? TaskRunStart(run1.id.get)
-      val t2Success = taskRunRepo ? TaskRunStart(run2.id.get) map (_ => taskRunRepo ? TaskRunSuccess(run2.id.get, Some("all fine and dandy")))
-      val t3Fail = taskRunRepo ? TaskRunStart(run3.id.get) flatMap (_ => taskRunRepo ? TaskRunFailure(run3.id.get, Some("kaboom!")))
-      Future.sequence(List(t1Run, t2Success, t3Fail))
+      // start and finish two of the pending tasks
+      val t1Success = taskRunRepo ? TaskRunStart(run1.name) flatMap (_ =>
+        taskRunRepo ? TaskRunSuccess(
+          run1.name,
+          Some("all fine and dandy")
+        ))
+      val t2Fail = taskRunRepo ? TaskRunStart(run2.name) flatMap (_ =>
+        taskRunRepo ? TaskRunFailure(
+          run2.name,
+          Some("kaboom!")
+        ))
+      val toFinish: Future[List[Any]] = Future.sequence(List(t1Success, t2Fail))
+      toFinish
     }
-    //    Await.result(startRuns, 10 seconds)
-    (runsStored, startRuns)
+    (runsStored, Await.result(startRuns, 10 seconds))
   }
 
-  def storeRunsForInitTasks(taskRunRepo: ActorRef)(implicit ec: ExecutionContext): Future[List[TaskRunAdded]] = {
-    val storeRuns: List[Future[TaskRunAdded]] = initTasks map { taskName =>
+  def addPendingRuns(
+    taskRunRepo: ActorRef,
+    taskNames: List[String]
+  )(implicit ec: ExecutionContext): Future[List[TaskRunAdded]] = {
+    val storeRuns: List[Future[TaskRunAdded]] = taskNames map { taskName =>
       (taskRunRepo ? AddTaskRun(taskName)).mapTo[TaskRunAdded]
     }
     val runsStored = Future.sequence(storeRuns)

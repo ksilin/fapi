@@ -25,13 +25,17 @@ import io.getquill.sources.sql.idiom.H2Dialect
 import io.getquill.{ JdbcSourceConfig, QueryProbing, _ }
 import org.joda.time.{ DateTime, DateTimeComparator, DateTimeZone }
 
+import scala.util.Random
+
 package object data {
 
   implicit val decodeDateTime = mappedEncoding[Date, DateTime](new DateTime(_))
   implicit val encodeDateTime = mappedEncoding[DateTime, Date](_.toDate)
 
-  implicit val encodeDate = mappedEncoding[Date, LocalDateTime](d => LocalDateTime.ofInstant(Instant.ofEpochMilli(d.getTime), ZoneOffset.UTC))
-  implicit val decodeDate = mappedEncoding[LocalDateTime, Date](ldt => Date.from(ldt.toInstant(ZoneOffset.UTC)))
+  implicit val encodeDate = mappedEncoding[Date, LocalDateTime](d =>
+    LocalDateTime.ofInstant(Instant.ofEpochMilli(d.getTime), ZoneOffset.UTC))
+  implicit val decodeDate = mappedEncoding[LocalDateTime, Date](ldt =>
+    Date.from(ldt.toInstant(ZoneOffset.UTC)))
 
   implicit class ForLocalDateTime(ldt: LocalDateTime) {
     def > = quote((arg: LocalDateTime) => infix"$ldt > $arg".as[Boolean])
@@ -48,7 +52,13 @@ package object data {
 
   //  val h2DBWithQueryProbing = source(new JdbcSourceConfig[H2Dialect, Literal](dbName) with QueryProbing)
 
-  case class Load(machine: String, cpu: Int = 0, mem: Int = 0, records: Long = 0L, time: DateTime = DateTime.now())
+  case class Load(
+    machine: String,
+    cpu: Int = 0,
+    mem: Int = 0,
+    records: Long = 0L,
+    time: DateTime = DateTime.now()
+  )
 
   val loads = quote {
     query[Load]
@@ -66,14 +76,46 @@ package object data {
     query[Load].insert(l)
   }
 
-  val loadsAfterFor = quote { (t: DateTime, machine: String) => query[Load].filter(_.time > t).filter(_.machine == machine) }
+  val loadsAfterFor = quote { (t: DateTime, machine: String) =>
+    query[Load].filter(_.time > t).filter(_.machine == machine)
+  }
 
-  val xlastLoadsFor = quote { (machine: String, count: Int) => query[Load].withFilter(_.machine == machine).sortBy(_.time)(Ord.descNullsLast).take(count) }
+  val xlastLoadsFor = quote { (machine: String, count: Int) =>
+    query[Load]
+      .withFilter(_.machine == machine)
+      .sortBy(_.time)(Ord.descNullsLast)
+      .take(count)
+  }
 
-  case class Task(name: String, createdAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, active: Boolean = true, id: Option[Int] = None)
+  case class Task(
+    name: String,
+    createdAt: DateTime = DateTime.now(),
+    modifiedAt: Option[DateTime] = None,
+    active: Boolean = true,
+    id: String = Random.alphanumeric.take(16).mkString
+  )
 
-  case class TaskStart(name: String, startedAt: DateTime = DateTime.now(), modifiedAt: Option[DateTime] = None, id: Option[Int] = None)
-  case class TaskEnd(name: String, doneAt: DateTime = DateTime.now(), successful: Boolean = true, msg: Option[String], id: Option[Int] = None)
-  case class TaskRun(name: String, createdAt: DateTime = DateTime.now(), startedAt: Option[DateTime] = None, doneAt: Option[DateTime] = None, successful: Boolean = true, msg: Option[String] = None, id: Option[Int] = None)
+  case class TaskStart(
+    name: String,
+    startedAt: DateTime = DateTime.now(),
+    modifiedAt: Option[DateTime] = None,
+    id: String = Random.alphanumeric.take(16).mkString
+  )
+  case class TaskEnd(
+    name: String,
+    doneAt: DateTime = DateTime.now(),
+    successful: Boolean = true,
+    msg: Option[String],
+    id: String = Random.alphanumeric.take(16).mkString
+  )
+  case class TaskRun(
+    name: String,
+    createdAt: DateTime = DateTime.now(),
+    startedAt: Option[DateTime] = None,
+    doneAt: Option[DateTime] = None,
+    successful: Boolean = true,
+    msg: Option[String] = None,
+    id: String = Random.alphanumeric.take(16).mkString
+  )
 
 }

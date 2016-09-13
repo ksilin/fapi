@@ -27,132 +27,145 @@ import org.scalatest._
 
 import scala.concurrent.duration._
 
-class TaskRunRepositorySpec extends TestKit(ActorSystem("TaskRunRepoSpec")) with AsyncFreeSpecLike with Matchers
-    with BeforeAndAfterAll with LazyLogging with ClusterConfig {
+class TaskRunRepositorySpec
+    extends TestKit(ActorSystem("TaskRunRepoSpec"))
+    with AsyncFreeSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with LazyLogging
+    with ClusterConfig {
 
   implicit val timeout: Timeout = 10 seconds
-  val repo = TestActorRef(new TaskRunRepository)
+  val taskRunRepo = TestActorRef(new TaskRunRepository)
   val taskRepo = TestActorRef(new TaskRepository)
 
   BootstrapData.storeInitTasks(taskRepo)
-  BootstrapData.storeInitTaskRuns(repo)
+  // a pending run for each task plus 1 failed and 1 succeeded
+  val (startedRuns, finishedRuns) = BootstrapData.storeInitTaskRuns(taskRunRepo)
+  val initTaskCount: Int = BootstrapData.initTaskNames.size
 
   "TaskRunRepository" - {
 
-    "should return all pending tasks" in {
-      val pending = (repo ? GetPending).mapTo[List[TaskRun]]
+    "should return all task runs" in {
+      val getAllRuns = (taskRunRepo ? GetAll).mapTo[List[TaskRun]]
+      getAllRuns.map { (runs: List[TaskRun]) =>
+        runs foreach println
+        runs.size shouldBe (initTaskCount)
+      }
+    }
+
+    "should return all pending runs" in {
+      val pending = (taskRunRepo ? GetPending).mapTo[List[TaskRun]]
       pending map { trs =>
         println(s"pending $trs")
-        trs.size should be(3)
+        trs.size should be(startedRuns.size - finishedRuns.size)
       }
     }
 
     "should return all running tasks" in {
-      val running = (repo ? GetRunning).mapTo[List[TaskRun]]
+      val running = (taskRunRepo ? GetRunning).mapTo[List[TaskRun]]
       running map { trs =>
-        trs.size should be(1)
+        trs.size should be(0)
       }
     }
 
-    "should return all finished tasks" in {
-      val finished = (repo ? GetFinished).mapTo[List[TaskRun]]
+    "should return all finished runs" in {
+      val finished = (taskRunRepo ? GetFinished).mapTo[List[TaskRun]]
       finished map { trs =>
-        trs.size should be(2)
+        trs.size should be(finishedRuns.size)
       }
     }
 
-    "should return all successfully finished tasks" in {
-      val success = (repo ? GetFinishedSuccessfully).mapTo[List[TaskRun]]
+    "should return all successfully finished runs" in {
+      val success = (taskRunRepo ? GetFinishedSuccessfully).mapTo[List[TaskRun]]
       success map { trs =>
         trs.size should be(1)
       }
     }
-    "should return all failed tasks" in {
-      val failed = (repo ? GetFailed).mapTo[List[TaskRun]]
+    "should return all failed runs" in {
+      val failed = (taskRunRepo ? GetFailed).mapTo[List[TaskRun]]
       failed map { trs =>
         trs.size should be(1)
       }
     }
 
-    "should start pending task" in {
+    "should start pending run" in {
 
-      val pending = (repo ? GetPending).mapTo[List[TaskRun]]
+      val pending = (taskRunRepo ? GetPending).mapTo[List[TaskRun]]
 
       pending flatMap { (trs: List[TaskRun]) =>
         println(s"pending $trs")
-        val id: Int = trs.head.id.get
-        ((repo ? TaskRunStart(id)).mapTo[TaskRunUpdated]).map(r => (r, id))
+        val name: String = trs.head.name
+        ((taskRunRepo ? TaskRunStart(name)).mapTo[TaskRunUpdated]).map(r => (r, name))
       } map {
-        case (r, id) =>
-          r should be(TaskRunUpdated(id))
+        case (r, name) =>
+          r should be(TaskRunUpdated(name))
       }
     }
 
     "should ignore start if task running" in {
-      val running = (repo ? GetRunning).mapTo[List[TaskRun]]
+      val running = (taskRunRepo ? GetRunning).mapTo[List[TaskRun]]
 
       running flatMap { (trs: List[TaskRun]) =>
         println(s"running $trs")
-        val id: Int = trs.head.id.get
-        ((repo ? TaskRunStart(id)).mapTo[RunNotPending]).map(r => (r, id))
+        val name: String = trs.head.name
+        ((taskRunRepo ? TaskRunStart(name)).mapTo[RunNotPending]).map(r => (r, name))
       } map {
-        case (r, id) =>
-          r should be(RunNotPending(id))
+        case (r, name) =>
+          r should be(RunNotPending(name))
       }
     }
 
     "should ignore start if task finished" in {
-      val finished = (repo ? GetFinished).mapTo[List[TaskRun]]
+      val finished = (taskRunRepo ? GetFinished).mapTo[List[TaskRun]]
 
       finished flatMap { (trs: List[TaskRun]) =>
         println(s"finished $trs")
-        val id: Int = trs.head.id.get
-        (repo ? TaskRunStart(id)).mapTo[RunNotPending].map(r => (r, id))
+        val name: String = trs.head.name
+        (taskRunRepo ? TaskRunStart(name)).mapTo[RunNotPending].map(r => (r, name))
       } map {
-        case (r, id) =>
-          r should be(RunNotPending(id))
+        case (r, name) =>
+          r should be(RunNotPending(name))
       }
     }
 
     "should successfully finish running tasks" in {
-      val running = (repo ? GetRunning).mapTo[List[TaskRun]]
+      val running = (taskRunRepo ? GetRunning).mapTo[List[TaskRun]]
 
       running flatMap { (trs: List[TaskRun]) =>
         println(s"running $trs")
-        val id: Int = trs.head.id.get
-        (repo ? TaskRunSuccess(id)).mapTo[TaskRunUpdated].map(r => (r, id))
+        val name: String = trs.head.name
+        (taskRunRepo ? TaskRunSuccess(name)).mapTo[TaskRunUpdated].map(r => (r, name))
       } map {
-        case (r, id) =>
-          r should be(TaskRunUpdated(id))
+        case (r, name) =>
+          r should be(TaskRunUpdated(name))
       }
     }
 
     "should ignore finish pending tasks" in {
-      val pending = (repo ? GetPending).mapTo[List[TaskRun]]
+      val pending = (taskRunRepo ? GetPending).mapTo[List[TaskRun]]
 
       pending flatMap { (trs: List[TaskRun]) =>
         println(s"pending $trs")
-        val id: Int = trs.head.id.get
-        (repo ? TaskRunSuccess(id)).mapTo[RunNotRunning].map(r => (r, id))
+        val name: String = trs.head.name
+        (taskRunRepo ? TaskRunSuccess(name)).mapTo[RunNotRunning].map(r => (r, name))
       } map {
-        case (r, id) =>
-          r should be(RunNotRunning(id))
+        case (r, name) =>
+          r should be(RunNotRunning(name))
       }
     }
 
     "should ignore finish finished tasks" in {
-      val finished = (repo ? GetFinished).mapTo[List[TaskRun]]
+      val finished = (taskRunRepo ? GetFinished).mapTo[List[TaskRun]]
 
       finished flatMap { (trs: List[TaskRun]) =>
         println(s"finished $trs")
-        val id: Int = trs.head.id.get
-        (repo ? TaskRunSuccess(id)).mapTo[RunNotRunning].map(r => (r, id))
+        val name: String = trs.head.name
+        (taskRunRepo ? TaskRunSuccess(name)).mapTo[RunNotRunning].map(r => (r, name))
       } map {
-        case (r, id) =>
-          r should be(RunNotRunning(id))
+        case (r, name) =>
+          r should be(RunNotRunning(name))
       }
     }
-
   }
-
 }

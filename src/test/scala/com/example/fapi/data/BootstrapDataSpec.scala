@@ -25,6 +25,8 @@ import org.scalatest.{ FreeSpecLike, Matchers }
 
 class BootstrapDataSpec extends TestKit(ActorSystem("bootstrapDataSpecSystem")) with FreeSpecLike with Matchers {
 
+  import system.dispatcher
+
   "test creation of initial data" - {
 
     "starts load creation" in {
@@ -35,16 +37,14 @@ class BootstrapDataSpec extends TestKit(ActorSystem("bootstrapDataSpecSystem")) 
 
     "adds initial tasks" in {
       BootstrapData.storeInitTasks(testActor)
-      val expTasks: List[AddTask] = BootstrapData.initTasks map (AddTask(_))
+      val expTasks: List[AddTask] = BootstrapData.initTaskNames map (AddTask(_))
       (0 until expTasks.size).foreach { _ => expectMsgAnyOf(expTasks: _*) }
     }
 
     "adds runs for initial tasks" in {
-      // TODO - the current method is a mess
-      //      val taskRuns: (Future[List[TaskRunAdded]], Future[List[Any]]) =
-      BootstrapData.storeInitTaskRuns(testActor)
-      val expTasks: List[AddTaskRun] = BootstrapData.initTasks map (AddTaskRun(_))
-      (0 until expTasks.size).foreach { _ => expectMsgAnyOf(expTasks: _*) }
+      val testtask: String = "testtask"
+      BootstrapData.addPendingRuns(testActor, List(testtask))
+      expectMsg(AddTaskRun(testtask))
     }
 
   }
