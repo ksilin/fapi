@@ -23,12 +23,13 @@ import com.example.fapi.data.TaskRepository.AddTask
 import com.example.fapi.data.TaskRunRepository._
 import com.example.fapi.data.TaskRunner.StartTask
 import com.example.fapi.data.sources.LoadGen.{ GenLoad, Purge }
+import com.example.fapi.http.ClusterConfig
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
-object BootstrapData extends LazyLogging {
+object BootstrapData extends LazyLogging with ClusterConfig {
 
   val initTaskNames = List("import_db1", "import_db2", "import_db3", "gc", "img_convert", "img_inventory")
   implicit val timeout: Timeout = 10 seconds
@@ -65,14 +66,15 @@ object BootstrapData extends LazyLogging {
       val run2: TaskRun = runsStored.tail.head.taskRun
 
       // start and finish two of the pending tasks
-      val t1Success = taskRunRepo ? TaskRunStart(run1.name) flatMap (_ =>
+      val t1Success = taskRunRepo ? TaskRunStart(run1.name, randomMachine) flatMap (_ =>
         taskRunRepo ? TaskRunSuccess(
-          run1.name,
+          run1.name, randomMachine,
           Some("all fine and dandy")
         ))
-      val t2Fail = taskRunRepo ? TaskRunStart(run2.name) flatMap (_ =>
+      val t2Fail = taskRunRepo ? TaskRunStart(run2.name, randomMachine) flatMap (_ =>
         taskRunRepo ? TaskRunFailure(
           run2.name,
+          randomMachine,
           Some("kaboom!")
         ))
       val toFinish: Future[List[Any]] = Future.sequence(List(t1Success, t2Fail))

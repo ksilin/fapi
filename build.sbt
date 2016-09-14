@@ -2,6 +2,8 @@ lazy val fapi = project
   .in(file("."))
   .enablePlugins(AutomateHeaderPlugin, GitVersioning, JavaAppPackaging)
 
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.15")
+
 //parallelExecution in Test := false
 
 resolvers += Resolver.sonatypeRepo("snapshots")

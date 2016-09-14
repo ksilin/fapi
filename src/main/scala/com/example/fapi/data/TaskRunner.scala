@@ -20,6 +20,7 @@ import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.pattern.ask
 import akka.util.Timeout
 import com.example.fapi.data.TaskRunRepository.{ GetPending, TaskRunStart, TaskRunSuccess }
+import com.example.fapi.http.ClusterConfig
 
 import scala.concurrent.duration._
 
@@ -40,7 +41,7 @@ object TaskRunner {
   val Name = "taskrunner"
 }
 
-class TaskRunner(taskRunRepo: ActorRef) extends Actor with ActorLogging {
+class TaskRunner(taskRunRepo: ActorRef) extends Actor with ActorLogging with ClusterConfig {
 
   import TaskRunner._
 
@@ -54,9 +55,10 @@ class TaskRunner(taskRunRepo: ActorRef) extends Actor with ActorLogging {
       (taskRunRepo ? GetPending).mapTo[List[TaskRun]] map { runs =>
         runs.headOption map { run =>
           val id: String = run.id
-          taskRunRepo ! TaskRunStart(id)
+          val machine: String = randomMachine
+          taskRunRepo ! TaskRunStart(id, machine)
           // TODO - schedule failing tasks as well
-          context.system.scheduler.scheduleOnce(taskRunTime, taskRunRepo, TaskRunSuccess(id, Some("all is well")))
+          context.system.scheduler.scheduleOnce(taskRunTime, taskRunRepo, TaskRunSuccess(id, machine, Some("all is well")))
         }
       }
   }

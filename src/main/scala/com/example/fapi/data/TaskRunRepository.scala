@@ -45,15 +45,15 @@ object TaskRunRepository {
 
   case class TaskUnknown(name: String)
 
-  case class TaskRunStart(id: String)
+  case class TaskRunStart(id: String, machine: String)
 
   case class Delete(id: String)
 
   case class Deleted(id: String)
 
-  case class TaskRunSuccess(id: String, message: Option[String] = None)
+  case class TaskRunSuccess(id: String, machine: String, message: Option[String] = None)
 
-  case class TaskRunFailure(id: String, message: Option[String] = None)
+  case class TaskRunFailure(id: String, machine: String, message: Option[String] = None)
 
   case class TaskRunUpdated(id: String)
 
@@ -100,21 +100,21 @@ class TaskRunRepository extends Actor with ActorLogging {
       taskRuns = taskRuns.filterNot(_.name == name)
       sender() ! Deleted(name)
 
-    case TaskRunStart(name) =>
+    case TaskRunStart(name, machine) =>
       pending().filter(_.name == name) match {
         case Nil => sender() ! RunNotPending(name)
         case head :: Nil =>
           taskRuns = head.copy(startedAt = Some(DateTime.now)) :: taskRuns.filterNot(_.name == name)
           sender() ! TaskRunUpdated(name)
       }
-    case TaskRunSuccess(name, message) =>
+    case TaskRunSuccess(name, machine, message) =>
       running().filter(_.name == name) match {
         case Nil => sender() ! RunNotRunning(name)
         case head :: Nil =>
           taskRuns = head.copy(doneAt = Some(DateTime.now), msg = message) :: taskRuns.filterNot(_.name == name)
           sender() ! TaskRunUpdated(name)
       }
-    case TaskRunFailure(name, message) =>
+    case TaskRunFailure(name, machine, message) =>
       running().filter(_.name == name) match {
         case Nil => sender() ! RunNotRunning(name)
         case head :: Nil =>

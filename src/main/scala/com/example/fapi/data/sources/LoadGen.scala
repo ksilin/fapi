@@ -23,6 +23,8 @@ import com.example.fapi.data.{ Load, LoadRepository }
 import com.example.fapi.http.ClusterConfig
 import org.joda.time.DateTime
 
+import scala.util.Random
+
 object LoadGen {
 
   case object GenLoad
@@ -33,16 +35,19 @@ object LoadGen {
   def props(repo: ActorRef) = Props(new LoadGen(repo))
 }
 
-class LoadGen(repo: ActorRef) extends Actor with ActorLogging with ClusterConfig {
+class LoadGen(loadRepo: ActorRef) extends Actor with ActorLogging with ClusterConfig {
 
   //  val repo = context.actorOf(LoadRepository.props())
 
   override def receive: Receive = {
-    case GenLoad => machines foreach { machine =>
-      // TODO - use machine stats to generate more plausible loads
-      log.debug(s"generating load for machine $machine")
-      repo ! StoreLoad(Load(machine, 10, 10, 10000L))
-    }
-    case Purge => repo ! DeleteLoadsBefore(DateTime.now.minusMinutes(15))
+    case GenLoad =>
+      machines foreach { machine =>
+        // TODO - use machine stats to generate more plausible loads
+        log.debug(s"generating load for machine $machine")
+        loadRepo ! StoreLoad(randomLoad(machine))
+      }
+    case Purge => loadRepo ! DeleteLoadsBefore(DateTime.now.minusMinutes(15))
   }
+
+  def randomLoad(machine: String) = Load(machine, Random.nextInt(80), Random.nextInt(80), 10000L)
 }

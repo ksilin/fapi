@@ -39,6 +39,8 @@ class TaskRunRepositorySpec
   val taskRunRepo = TestActorRef(new TaskRunRepository)
   val taskRepo = TestActorRef(new TaskRepository)
 
+  val testmachine: String = "testMachine"
+
   BootstrapData.storeInitTasks(taskRepo)
   // a pending run for each task plus 1 failed and 1 succeeded
   val (startedRuns, finishedRuns) = BootstrapData.storeInitTaskRuns(taskRunRepo)
@@ -96,7 +98,8 @@ class TaskRunRepositorySpec
       pending flatMap { (trs: List[TaskRun]) =>
         println(s"pending $trs")
         val name: String = trs.head.name
-        ((taskRunRepo ? TaskRunStart(name)).mapTo[TaskRunUpdated]).map(r => (r, name))
+
+        ((taskRunRepo ? TaskRunStart(name, testmachine)).mapTo[TaskRunUpdated]).map(r => (r, name))
       } map {
         case (r, name) =>
           r should be(TaskRunUpdated(name))
@@ -109,7 +112,7 @@ class TaskRunRepositorySpec
       running flatMap { (trs: List[TaskRun]) =>
         println(s"running $trs")
         val name: String = trs.head.name
-        ((taskRunRepo ? TaskRunStart(name)).mapTo[RunNotPending]).map(r => (r, name))
+        ((taskRunRepo ? TaskRunStart(name, testmachine)).mapTo[RunNotPending]).map(r => (r, name))
       } map {
         case (r, name) =>
           r should be(RunNotPending(name))
@@ -122,7 +125,7 @@ class TaskRunRepositorySpec
       finished flatMap { (trs: List[TaskRun]) =>
         println(s"finished $trs")
         val name: String = trs.head.name
-        (taskRunRepo ? TaskRunStart(name)).mapTo[RunNotPending].map(r => (r, name))
+        (taskRunRepo ? TaskRunStart(name, testmachine)).mapTo[RunNotPending].map(r => (r, name))
       } map {
         case (r, name) =>
           r should be(RunNotPending(name))
@@ -135,7 +138,7 @@ class TaskRunRepositorySpec
       running flatMap { (trs: List[TaskRun]) =>
         println(s"running $trs")
         val name: String = trs.head.name
-        (taskRunRepo ? TaskRunSuccess(name)).mapTo[TaskRunUpdated].map(r => (r, name))
+        (taskRunRepo ? TaskRunSuccess(name, testmachine)).mapTo[TaskRunUpdated].map(r => (r, name))
       } map {
         case (r, name) =>
           r should be(TaskRunUpdated(name))
@@ -148,7 +151,7 @@ class TaskRunRepositorySpec
       pending flatMap { (trs: List[TaskRun]) =>
         println(s"pending $trs")
         val name: String = trs.head.name
-        (taskRunRepo ? TaskRunSuccess(name)).mapTo[RunNotRunning].map(r => (r, name))
+        (taskRunRepo ? TaskRunSuccess(name, testmachine)).mapTo[RunNotRunning].map(r => (r, name))
       } map {
         case (r, name) =>
           r should be(RunNotRunning(name))
@@ -161,7 +164,7 @@ class TaskRunRepositorySpec
       finished flatMap { (trs: List[TaskRun]) =>
         println(s"finished $trs")
         val name: String = trs.head.name
-        (taskRunRepo ? TaskRunSuccess(name)).mapTo[RunNotRunning].map(r => (r, name))
+        (taskRunRepo ? TaskRunSuccess(name, testmachine)).mapTo[RunNotRunning].map(r => (r, name))
       } map {
         case (r, name) =>
           r should be(RunNotRunning(name))

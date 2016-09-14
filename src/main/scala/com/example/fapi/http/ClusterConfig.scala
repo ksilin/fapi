@@ -19,6 +19,7 @@ package com.example.fapi.http
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 trait ClusterConfig {
 
@@ -28,4 +29,10 @@ trait ClusterConfig {
   val machines = httpConfig.getStringList("machines").asScala.to[List]
   val loadAvg = httpConfig.getStringList("loadAvg").asScala.to[List] map (_.toInt)
   val initRecords = httpConfig.getStringList("initRecords").asScala.to[List] map (_.toInt)
+
+  val machineConf: Map[String, (Int, Int, Int)] = machines.zipWithIndex.map {
+    case (machine, idx) => machine -> (idx, loadAvg(idx), initRecords(idx))
+  }.toMap
+
+  def randomMachine = machines(Random.nextInt(machines.size - 1))
 }
