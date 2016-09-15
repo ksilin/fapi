@@ -4,17 +4,29 @@ Welcome to fapi - a small fake api, crudely simulating a cluster of machines per
 
 ## Resources ##
 
+Task - a task is a job description. Currently it only has a name and an id. 
+
+Taskrun - a task that should be run is scheduled first. Only scheduled runs can be run or deleted/aborted.
+
+Load - percentage of CPU and RAM load for a machine plus the number of records stored. Currently generated randomly. 
+
+Machine - not present as an own resource yet, currently a derived resource of Load
+
 ## API examples ##
 
 dont forget to add basic auth credentials to each request: 
 
 `http :9123/something/ --auth marco:polo`
 
+All request bodies have to be valid JSON documents.
+
+The API errs on the strict side, i.e. the resources expect a trailing slash. only `.../task/` will return the list of tasks while `.../task` will end up in a 404.
+
 ### tasks
 
-all tasks `http :9123/task/`
+all tasks: `http :9123/task/`
 
-one task tasks `http :9123/task/import_db1`
+one task: `http :9123/task/import_db1`
 
 add task: `echo '{"name":"new_task2","createdAt":1467983405448,"modifiedAt":null,"active":true,"id":null}' | http POST :9123/task/ Accept:'*/*'`
 
