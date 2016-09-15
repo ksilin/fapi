@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#`git stash` # sbt still performs some formatting wihtout asking, so simply stash that shit
+#`git stash` # sbt still performs some formatting without asking, so simply stash that shit
 #`git pull`
 project = "fapi"
 target_dir = "fapi"
@@ -10,7 +10,7 @@ puts `unzip '*.zip'` # unfortunately, we do not get the name fo the resulting fo
 puts `rm #{project}*.zip` # remove the original zip file to prevent naming conflicts with wildcards. no quotes required
 puts `rm -rf #{target_dir}` # the former dir
 puts `mv #{project}* #{target_dir}`
-puts `pkill -f -9 #{project}` # `pgrep -f article | xargs` works as well , while other variants like `kill -9 ${pgrep -f article}` dont - the substitution is invalid
+puts `pkill -f -9 #{project}` # `pgrep -f #{project} | xargs` works as well , while other variants like `kill -9 ${pgrep -f #{project}}` dont - the substitution is invalid
 puts Dir.chdir(target_dir)
-puts `nohup bin/#{project} > 9876.log&`
+puts `nohup bin/#{project} > 9123.log&`
 puts `ps ax | grep #{project} | grep -v grep`
