@@ -23,17 +23,24 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.example.fapi.data.{ Task, TaskRepository }
 import de.heikoseeberger.akkahttpcirce.CirceSupport
+import io.circe.Decoder.Result
+import io.circe.{ ACursor, Decoder }
+import org.joda.time.DateTime
 
 import scala.concurrent.ExecutionContext
 
-class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives with CirceSupport {
+class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext)
+    extends Directives
+    with CirceSupport {
   import io.circe.generic.auto._
 
   implicit val timeout = internalTimeout
 
   val route = path("task" /) {
     taskGetAll ~ taskPost
-  } ~ path("task" / Segment) { name => taskGet(name) ~ deleteTask(name) }
+  } ~ path("task" / Segment) { name =>
+    taskGet(name) ~ deleteTask(name)
+  }
 
   def taskGetAll = get {
     complete {
@@ -48,9 +55,20 @@ class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit e
     }
   }
 
+  // TODO - not sure how to handle optional values or values with defaults implicitly, so here we go with a custom decoder
+  implicit val decodeFoo: Decoder[Task] = Decoder.instance { cursor =>
+    val named: Result[String]           = cursor.downField("name").as[String]
+    val activeResult: Result[Boolean]   = cursor.downField("active").as[Boolean]
+    val active: Boolean                 = activeResult.getOrElse(false)
+    val createdResult: Result[DateTime] = cursor.downField("createdAt").as[DateTime]
+    val created: DateTime               = createdResult.getOrElse(DateTime.now())
+    val modified: Option[DateTime]      = cursor.downField("modifiedAt").as[DateTime].toOption
+    named.map(n => Task(name = n, createdAt = created, modifiedAt = modified, active = active))
+  }
+
   def taskPost = post {
     entity(as[Task]) { (task: Task) =>
-      onSuccess(taskRepository ? TaskRepository.AddTask(task.name)) {
+      onSuccess(taskRepository ? TaskRepository.AddTask(task)) {
         case TaskRepository.TaskAdded(_)  => complete(StatusCodes.Created)
         case TaskRepository.TaskExists(_) => complete(StatusCodes.Conflict)
       }

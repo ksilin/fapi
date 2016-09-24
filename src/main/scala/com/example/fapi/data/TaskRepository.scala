@@ -24,7 +24,8 @@ object TaskRepository {
 
   case class GetTask(name: String)
 
-  case class AddTask(name: String)
+  //  case class AddTask(name: String)
+  case class AddTask(task: Task)
 
   case class TaskAdded(task: Task)
 
@@ -56,12 +57,12 @@ class TaskRepository extends Actor with ActorLogging {
     case GetTask(name: String) =>
       log.debug(s"received GetTask $name command")
       sender() ! tasks.filter(_.name == name)
-    case AddTask(name) if tasks.exists(_.name == name) =>
-      log.info(s"Adding new task with name $name failed - task exists")
-      sender() ! TaskExists(name)
-    case AddTask(name) =>
-      log.info(s"Adding new task with name $name")
-      val task = Task(name)
+    case AddTask(task) if tasks.exists(_.name == task.name) =>
+      log.info(s"Adding new task with name ${task.name} failed - task exists")
+      sender() ! TaskExists(task.name)
+    case AddTask(task) =>
+      log.info(s"Adding new task $task")
+      //      val task = Task(name)
       tasks = task :: tasks
       sender() ! TaskAdded(task)
     case DeleteTask(name) if tasks.exists(_.name == name) =>
