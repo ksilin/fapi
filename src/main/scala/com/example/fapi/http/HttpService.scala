@@ -22,10 +22,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.{ Credentials, DebuggingDirectives }
 import akka.http.scaladsl.server.{ Directives, Route }
+import akka.http.scaladsl.model.HttpMethods._
 import akka.pattern.pipe
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import ch.megard.akka.http.cors.CorsDirectives._
+import ch.megard.akka.http.cors.CorsSettings
 
 import scala.concurrent.ExecutionContext
 
@@ -33,11 +35,18 @@ object HttpService extends HttpConfig {
 
   final val Name = "http-service"
 
-  def props(internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef, taskRunRepository: ActorRef): Props =
+  def props(internalTimeout: Timeout,
+            loadRepository: ActorRef,
+            taskRepository: ActorRef,
+            taskRunRepository: ActorRef): Props =
     Props(new HttpService(httpInterface, httpPort, internalTimeout, loadRepository, taskRepository, taskRunRepository))
 
-  private def route(httpService: ActorRef, internalTimeout: Timeout, loadRepository: ActorRef,
-    taskRepository: ActorRef, taskRunRepository: ActorRef, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
+  private def route(httpService: ActorRef,
+                    internalTimeout: Timeout,
+                    loadRepository: ActorRef,
+                    taskRepository: ActorRef,
+                    taskRunRepository: ActorRef,
+                    system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
 
     def assets = pathPrefix("swagger") {
@@ -51,23 +60,32 @@ object HttpService extends HttpConfig {
         case _ => None
       }
 
-    val loadRoute: Route = new LoadService(loadRepository, internalTimeout).route
-    val taskRoute: Route = new TaskService(taskRepository, internalTimeout).route
-    val taskRunRoute: Route = new TaskRunService(taskRunRepository, taskRepository, internalTimeout).route
+    val loadRoute: Route       = new LoadService(loadRepository, internalTimeout).route
+    val taskRoute: Route       = new TaskService(taskRepository, internalTimeout).route
+    val taskRunRoute: Route    = new TaskRunService(taskRunRepository, taskRepository, internalTimeout).route
     val swaggerDocRoute: Route = new SwaggerDocService(httpInterface, httpPort, system).routes
-    val fullRoute = assets ~ loadRoute ~ taskRoute ~ taskRunRoute ~ swaggerDocRoute
+    val fullRoute              = assets ~ loadRoute ~ taskRoute ~ taskRunRoute ~ swaggerDocRoute
 
     val authRoute: Route = authenticateBasic(realm = "fapi", simplePassAuth) { userName =>
       fullRoute
     }
+
+    val corsSettings = CorsSettings.defaultSettings.copy(allowedMethods = List(GET, PUT, POST, HEAD, DELETE, OPTIONS))
+
     val corsRoute = cors() { authRoute }
 
     DebuggingDirectives.logRequest("request", Logging.DebugLevel)(corsRoute)
   }
 }
 
-class HttpService(address: String, port: Int, internalTimeout: Timeout, loadRepository: ActorRef, taskRepository: ActorRef, taskRunRepository: ActorRef)
-    extends Actor with ActorLogging {
+class HttpService(address: String,
+                  port: Int,
+                  internalTimeout: Timeout,
+                  loadRepository: ActorRef,
+                  taskRepository: ActorRef,
+                  taskRunRepository: ActorRef)
+    extends Actor
+    with ActorLogging {
 
   import HttpService._
   import context.dispatcher
@@ -75,7 +93,9 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, loadRepo
   private implicit val mat = ActorMaterializer()
 
   Http(context.system)
-    .bindAndHandle(route(self, internalTimeout, loadRepository, taskRepository, taskRunRepository, context.system), address, port)
+    .bindAndHandle(route(self, internalTimeout, loadRepository, taskRepository, taskRunRepository, context.system),
+                   address,
+                   port)
     .pipeTo(self)
 
   override def receive = binding
