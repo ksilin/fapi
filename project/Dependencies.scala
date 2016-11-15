@@ -2,7 +2,7 @@ import sbt._
 
 object Version {
   final val Scala     = "2.11.8"
-  final val akka = "2.4.10"
+  final val akka = "2.4.11"
   final val akkaHttpCors = "0.1.2"
   final val ScalaTest = "3.0.0"
   final val circe = "0.5.1"

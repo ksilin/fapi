@@ -57,12 +57,12 @@ class TaskService(taskRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   // TODO - not sure how to handle optional values or values with defaults implicitly, so here we go with a custom decoder
   implicit val decodeFoo: Decoder[Task] = Decoder.instance { cursor =>
-    val named: Result[String]           = cursor.downField("name").as[String]
-    val activeResult: Result[Boolean]   = cursor.downField("active").as[Boolean]
-    val active: Boolean                 = activeResult.getOrElse(false)
+    val named: Result[String] = cursor.downField("name").as[String]
+    val activeResult: Result[Boolean] = cursor.downField("active").as[Boolean]
+    val active: Boolean = activeResult.getOrElse(false)
     val createdResult: Result[DateTime] = cursor.downField("createdAt").as[DateTime]
-    val created: DateTime               = createdResult.getOrElse(DateTime.now())
-    val modified: Option[DateTime]      = cursor.downField("modifiedAt").as[DateTime].toOption
+    val created: DateTime = createdResult.getOrElse(DateTime.now())
+    val modified: Option[DateTime] = cursor.downField("modifiedAt").as[DateTime].toOption
     named.map(n => Task(name = n, createdAt = created, modifiedAt = modified, active = active))
   }
 

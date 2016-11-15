@@ -31,11 +31,11 @@ import scala.concurrent.duration._
 
 object BootstrapData extends LazyLogging with ClusterConfig {
 
-  val initTaskNames             = List("import_db1", "import_db2", "import_db3", "gc", "img_convert", "img_inventory")
+  val initTaskNames = List("import_db1", "import_db2", "import_db3", "gc", "img_convert", "img_inventory")
   implicit val timeout: Timeout = 10 seconds
 
   def startGenLoad(loadGen: ActorRef)(implicit actorSystem: ActorSystem) = {
-    val scheduler         = actorSystem.scheduler
+    val scheduler = actorSystem.scheduler
     implicit val executor = actorSystem.dispatcher
     logger.debug("started load generation")
     scheduler.schedule(Duration.Zero, 1 second, loadGen, GenLoad)
@@ -43,7 +43,7 @@ object BootstrapData extends LazyLogging with ClusterConfig {
   }
 
   def scheduleTaskRuns(taskRunner: ActorRef)(implicit actorSystem: ActorSystem) = {
-    val scheduler         = actorSystem.scheduler
+    val scheduler = actorSystem.scheduler
     implicit val executor = actorSystem.dispatcher
 
     scheduler.schedule(Duration.Zero, 30 seconds, taskRunner, StartTask)
@@ -59,7 +59,7 @@ object BootstrapData extends LazyLogging with ClusterConfig {
     implicit val executor = actorSystem.dispatcher
 
     val storeRuns: Future[List[TaskRunAdded]] = addPendingRuns(taskRunRepo, initTaskNames)
-    val runsStored                            = Await.result(storeRuns, 10 seconds)
+    val runsStored = Await.result(storeRuns, 10 seconds)
 
     val startRuns: Future[List[Any]] = {
       val run1: TaskRun = runsStored.head.taskRun
@@ -67,25 +67,27 @@ object BootstrapData extends LazyLogging with ClusterConfig {
 
       // start and finish two of the pending tasks
       val t1Success = taskRunRepo ? TaskRunStart(run1.name, randomMachine) flatMap (_ =>
-                                                                                      taskRunRepo ? TaskRunSuccess(
-                                                                                        run1.name,
-                                                                                        randomMachine,
-                                                                                        Some("all fine and dandy")
-                                                                                      ))
+        taskRunRepo ? TaskRunSuccess(
+          run1.name,
+          randomMachine,
+          Some("all fine and dandy")
+        ))
       val t2Fail = taskRunRepo ? TaskRunStart(run2.name, randomMachine) flatMap (_ =>
-                                                                                   taskRunRepo ? TaskRunFailure(
-                                                                                     run2.name,
-                                                                                     randomMachine,
-                                                                                     Some("kaboom!")
-                                                                                   ))
+        taskRunRepo ? TaskRunFailure(
+          run2.name,
+          randomMachine,
+          Some("kaboom!")
+        ))
       val toFinish: Future[List[Any]] = Future.sequence(List(t1Success, t2Fail))
       toFinish
     }
     (runsStored, Await.result(startRuns, 10 seconds))
   }
 
-  def addPendingRuns(taskRunRepo: ActorRef,
-                     taskNames: List[String])(implicit ec: ExecutionContext): Future[List[TaskRunAdded]] = {
+  def addPendingRuns(
+    taskRunRepo: ActorRef,
+    taskNames: List[String]
+  )(implicit ec: ExecutionContext): Future[List[TaskRunAdded]] = {
     val storeRuns: List[Future[TaskRunAdded]] = taskNames map { taskName =>
       (taskRunRepo ? AddTaskRun(taskName)).mapTo[TaskRunAdded]
     }

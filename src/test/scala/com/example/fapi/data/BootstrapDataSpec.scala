@@ -37,8 +37,10 @@ class BootstrapDataSpec extends TestKit(ActorSystem("bootstrapDataSpecSystem")) 
 
     "adds initial tasks" in {
       BootstrapData.storeInitTasks(testActor)
-      val expTasks: List[AddTask] = BootstrapData.initTaskNames map (AddTask(_))
-      (0 until expTasks.size).foreach { _ => expectMsgAnyOf(expTasks: _*) }
+      val expTasks: List[AddTask] = BootstrapData.initTaskNames map (name => AddTask(Task(name)))
+      (0 until expTasks.size).foreach { _ =>
+        expectMsgAnyOf(expTasks: _*)
+      }
     }
 
     "adds runs for initial tasks" in {
